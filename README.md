@@ -15,16 +15,25 @@ Deux modes :
   (Ascendant, Milieu du Ciel, maisons en signes entiers), jugé à la manière traditionnelle, puis
   confronté aux **transits du moment** — de sorte que la lecture évolue, elle aussi, d'instant en instant.
 
-## Selon les anciens
+## Module complet (selon les anciens)
 
-- Sept astres seulement : ☉ ☽ ☿ ♀ ♂ ♃ ♄
-- Zodiaque **tropical**, positions **géocentriques apparentes vraies de la date**
-- **Dignités essentielles** : domicile, exaltation, triplicité, exil, chute
-- **Aspects ptolémaïques** : conjonction, sextile, carré, trigone, opposition (orbes par moitiés)
-- **Maisons en signes entiers** (système hellénistique)
-- **Heures planétaires inégales** comptées depuis le lever, dans l'ordre chaldéen
-- **Application / séparation** et **course vide** de la Lune
-- Combustion, cazimi, sous les rayons ; rétrogradation ; secte diurne / nocturne
+- Sept astres : ☉ ☽ ☿ ♀ ♂ ♃ ♄ ; zodiaque **tropical**, positions **géocentriques vraies de la date**
+- **Dignités à cinq termes** : domicile, exaltation, triplicité (dorothéenne), **bornes égyptiennes**, **faces** (décans chaldéens) — avec score et **almutén** (du degré et de la géniture)
+- **Quatre systèmes de maisons** au choix : **signes entiers**, **Porphyre**, **Placide**, **Régiomontanus** (cuspides calculées et validées numériquement)
+- **Aspects ptolémaïques** (orbes par moitiés), application / séparation, **partile**, **réceptions mutuelles**, aspectarium
+- **Secte** diurne / nocturne, **hayz** ; combustion, cazimi, sous les rayons ; rétrogradation ; oriental / occidental
+- **Tempérament humoral** (sanguin / colérique / mélancolique / flegmatique) calculé et chiffré
+- **Sept Lots herméniques** (Fortune, Esprit, Amour, Nécessité, Victoire, Courage), **nœuds lunaires**
+- **Étoiles fixes** majeures (précessées) conjointes aux astres et aux angles
+- **28 demeures lunaires**, phase, **application** et **course vide** de la Lune
+- **Heures planétaires** inégales (ordre chaldéen) pour le ciel du moment
+- **Interprétation par maison** et **par astre** (signe + maison + dignité + aspects), survols explicatifs et liens internes
+
+## Architecture
+
+- **`engine.js`** — moteur de calcul pur, sans DOM. Fonctionne dans le navigateur (`window.DEMAIN`) **et dans Node** (`module.exports`), donc testable.
+- **`app.js`** — cockpit : figure (roue / carré), panneaux de données, délinéations, bulles de survol, liens internes.
+- **`style.css`**, **`index.html`** — présentation (esprit revue 1930, dense et navigable).
 
 ## Technique
 
@@ -38,8 +47,8 @@ Deux modes :
 
 ```bash
 npm install            # récupère astronomy-engine (uniquement pour les tests Node)
-node validate.js       # positions + Ascendant (formule vs horizon)
-node test-engine.js    # smoke test des APIs de l'éphéméride
+node validate.js       # positions + Ascendant (formule vs balayage d'horizon)
+node test-engine2.js   # thème complet + 4 systèmes de maisons (I=Asc, X=MC à 0,00°)
 ```
 
 Le site lui-même n'a **aucune dépendance d'exécution** : `index.html`, `style.css`, `app.js`

@@ -1,203 +1,172 @@
 /* ============================================================
-   DEMAIN — Bulletin des influences célestes
-   Esthétique : revue astrologique belge, années 1930.
-   Papier crème, encre sépia, filets doubles, sérif gravé.
+   DEMAIN — cockpit d'astrologie traditionnelle
+   Esprit revue belge années 1930, mais dense et navigable.
    ============================================================ */
-
-@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=EB+Garamond:ital,wght@0,400;0,500;1,400&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400&display=swap');
 
 :root{
-  --pap:#f3ead3;            /* papier */
-  --pap2:#efe3c4;           /* papier ombré */
-  --enc:#2b2117;            /* encre sépia foncée */
-  --enc2:#5a4a35;           /* encre adoucie */
-  --enc3:#8a7a5f;           /* encre la plus claire */
-  --or:#9c7a2e;             /* dorure passée */
-  --rouge:#7c2b22;          /* rouge de revue */
-  --bleu:#243a52;           /* bleu nuit (maléfiques/tension) */
-  --vert:#3f5d34;           /* vert (harmonie) */
-  --trait:#b9a877;          /* filets clairs */
-  --ombre:rgba(43,33,23,.18);
-  --serif:'EB Garamond', Georgia, 'Times New Roman', serif;
-  --titre:'Cormorant Garamond', Georgia, serif;
-  --glyph:'Segoe UI Symbol','Apple Symbols','Noto Sans Symbols2','DejaVu Sans', serif;
+  --pap:#f3ead3; --pap2:#ece0c0; --pap3:#e6d8b4;
+  --enc:#2b2117; --enc2:#5a4a35; --enc3:#8a7a5f;
+  --or:#9c7a2e; --rouge:#7c2b22; --bleu:#243a52; --vert:#3f5d34;
+  --trait:#c3b083; --trait2:#d8c89c; --ombre:rgba(43,33,23,.18);
+  --serif:'EB Garamond',Georgia,serif; --titre:'Cormorant Garamond',Georgia,serif;
+  --glyph:'Segoe UI Symbol','Apple Symbols','Noto Sans Symbols2','DejaVu Sans',serif;
 }
-
 *{ box-sizing:border-box; }
-html{ -webkit-text-size-adjust:100%; }
-body{
-  margin:0;
-  font-family:var(--serif);
-  color:var(--enc);
-  background:
-    radial-gradient(circle at 18% 12%, rgba(255,255,255,.35), transparent 38%),
-    radial-gradient(circle at 82% 78%, rgba(120,90,40,.07), transparent 45%),
-    var(--pap);
-  background-attachment:fixed;
-  line-height:1.62;
-  font-size:18px;
-}
-/* fin grain papier */
-body::before{
-  content:"";
-  position:fixed; inset:0; pointer-events:none; z-index:0;
-  opacity:.05;
-  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-}
-.wrap{ position:relative; z-index:1; max-width:920px; margin:0 auto; padding:28px 22px 80px; }
+body{ margin:0; font-family:var(--serif); color:var(--enc); background:var(--pap); line-height:1.5; font-size:16px;
+  background-image:radial-gradient(circle at 15% 8%,rgba(255,255,255,.3),transparent 40%),radial-gradient(circle at 85% 92%,rgba(120,90,40,.06),transparent 45%); }
+.wrap{ max-width:1200px; margin:0 auto; padding:20px 18px 70px; }
+a{ color:var(--rouge); text-decoration:none; cursor:pointer; } a:hover{ text-decoration:underline; }
+.g{ font-family:var(--glyph); }
+sup{ font-size:.7em; }
 
-/* ---------- Bandeau / masthead ---------- */
-.masthead{ text-align:center; border-bottom:3px double var(--enc); padding-bottom:14px; margin-bottom:6px; }
-.surtitre{
-  font-family:var(--serif); text-transform:uppercase; letter-spacing:.42em;
-  font-size:.72rem; color:var(--enc2); margin:0 0 6px;
-}
-.journal{
-  font-family:var(--titre); font-weight:600; font-size:clamp(3.4rem,12vw,6.2rem);
-  line-height:.9; margin:0; letter-spacing:.04em; color:var(--enc);
-}
+/* masthead */
+.masthead{ text-align:center; border-bottom:3px double var(--enc); padding-bottom:10px; }
+.surtitre{ text-transform:uppercase; letter-spacing:.4em; font-size:.66rem; color:var(--enc2); margin:0 0 4px; }
+.journal{ font-family:var(--titre); font-weight:600; font-size:clamp(2.8rem,9vw,4.6rem); line-height:.9; margin:0; letter-spacing:.03em; }
 .journal .pt{ color:var(--rouge); }
-.devise{ font-style:italic; font-size:1.02rem; color:var(--enc2); margin:8px 0 0; }
-.filet-date{
-  display:flex; justify-content:space-between; align-items:center; gap:10px;
-  border-top:1px solid var(--enc); border-bottom:1px solid var(--enc);
-  margin-top:14px; padding:5px 2px; font-size:.74rem; text-transform:uppercase; letter-spacing:.18em;
-  color:var(--enc2);
-}
-.filet-date b{ color:var(--enc); font-weight:600; }
+.devise{ font-style:italic; font-size:.95rem; color:var(--enc2); margin:6px 0 0; }
+.filet-date{ display:flex; justify-content:space-between; gap:10px; border-top:1px solid var(--enc); border-bottom:1px solid var(--enc);
+  margin-top:10px; padding:4px 2px; font-size:.7rem; text-transform:uppercase; letter-spacing:.12em; color:var(--enc2); }
+.filet-date b{ color:var(--enc); }
 
-/* ---------- Onglets ---------- */
-.onglets{ display:flex; gap:0; justify-content:center; margin:22px 0 10px; flex-wrap:wrap; }
-.onglet{
-  font-family:var(--titre); font-size:1.28rem; font-weight:600; letter-spacing:.06em;
-  background:transparent; border:1px solid var(--trait); border-bottom:none;
-  color:var(--enc2); padding:8px 22px; cursor:pointer; text-transform:uppercase;
-  position:relative; top:1px;
-}
+/* onglets */
+.onglets{ display:flex; justify-content:center; margin:18px 0 0; }
+.onglet{ font-family:var(--titre); font-size:1.2rem; font-weight:600; letter-spacing:.05em; text-transform:uppercase;
+  background:transparent; border:1px solid var(--trait); border-bottom:none; color:var(--enc2); padding:7px 20px; cursor:pointer; position:relative; top:1px; }
 .onglet+.onglet{ border-left:none; }
 .onglet[aria-selected="true"]{ color:var(--rouge); background:var(--pap2); border-color:var(--enc); border-bottom:1px solid var(--pap2); }
-.onglet:focus-visible{ outline:2px solid var(--or); outline-offset:2px; }
 
-/* ---------- Sections ---------- */
-.panneau{ border-top:1px solid var(--enc); padding-top:18px; }
+.panneau{ border-top:1px solid var(--enc); padding-top:14px; }
 .panneau[hidden]{ display:none; }
 
-.colonnes{ display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1.05fr); gap:30px; align-items:start; }
-@media(max-width:760px){ .colonnes{ grid-template-columns:1fr; gap:22px; } }
+/* cockpit : figure (sticky) + feuille */
+.cockpit{ display:grid; grid-template-columns:392px minmax(0,1fr); gap:26px; align-items:start; }
+@media(max-width:900px){ .cockpit{ grid-template-columns:1fr; } }
+.figcol{ position:sticky; top:8px; }
+@media(max-width:900px){ .figcol{ position:static; } }
 
-/* ---------- Carré astrologique ---------- */
-.figure{ text-align:center; }
-.carre{ width:100%; max-width:420px; height:auto; margin:0 auto; display:block; }
-.carre .bord{ fill:none; stroke:var(--enc); stroke-width:2.2; }
-.carre .filet{ fill:none; stroke:var(--enc2); stroke-width:1; }
-.carre .cell{ fill:transparent; }
-.carre .cell.angul{ fill:rgba(156,122,46,.06); }
-.carre .num{ font-family:var(--serif); font-size:11px; fill:var(--enc3); }
-.carre .sg{ font-family:var(--glyph); font-size:17px; fill:var(--rouge); }
-.carre .pl{ font-family:var(--glyph); font-size:21px; fill:var(--enc); }
-.carre .pl.retro{ fill:var(--bleu); }
-.carre .deg{ font-family:var(--serif); font-size:9.5px; fill:var(--enc2); }
-.carre .axe{ font-family:var(--serif); font-size:10px; fill:var(--or); letter-spacing:.1em; }
-.fig-leg{ font-size:.8rem; color:var(--enc2); font-style:italic; margin-top:8px; }
+/* contrôles */
+.ctrls{ display:flex; flex-wrap:wrap; gap:8px; margin-bottom:8px; }
+.grp{ display:inline-flex; border:1px solid var(--trait); }
+.figbtn,.sysbtn{ font-family:var(--titre); font-size:.85rem; letter-spacing:.04em; text-transform:uppercase; background:transparent;
+  border:none; color:var(--enc2); padding:4px 11px; cursor:pointer; }
+.figbtn+.figbtn,.sysbtn+.sysbtn{ border-left:1px solid var(--trait); }
+.figbtn[aria-pressed="true"],.sysbtn[aria-pressed="true"]{ background:var(--enc); color:var(--pap); }
+.grp-sys .sysbtn{ font-size:.76rem; padding:4px 8px; }
 
-/* ---------- Roue du ciel ---------- */
-.w-ring{ fill:none; stroke:var(--enc); stroke-width:1.3; }
-.w-ring2{ fill:none; stroke:var(--enc2); stroke-width:.7; opacity:.55; }
-.w-hub{ fill:var(--enc2); stroke:none; }
-.w-cusp{ stroke:var(--trait); stroke-width:.8; }
-.w-tick{ stroke:var(--enc2); stroke-width:.6; opacity:.7; }
-.w-sign{ font-family:var(--glyph); font-size:16px; fill:var(--rouge); }
-.w-axis{ stroke:var(--or); stroke-width:1.5; }
-.w-axislab{ font-family:var(--serif); font-size:10px; fill:var(--or); letter-spacing:.06em; }
-.w-stem{ stroke:var(--enc3); stroke-width:.6; }
-.w-pl{ font-family:var(--glyph); font-size:18px; fill:var(--enc); }
-.w-pl.retro{ fill:var(--bleu); }
-.w-deg{ font-family:var(--serif); font-size:8.5px; fill:var(--enc2); }
-.w-asp{ stroke-width:1; fill:none; }
-.w-asp-h{ stroke:var(--vert); opacity:.7; }
-.w-asp-t{ stroke:var(--rouge); opacity:.62; }
-.w-asp-n{ stroke:var(--or); opacity:.85; stroke-width:1.4; }
-
-/* ---------- Bascule Roue / Carré ---------- */
-.figbasc{ display:inline-flex; margin-bottom:8px; border:1px solid var(--trait); }
-.figbtn{ font-family:var(--titre); font-size:.92rem; letter-spacing:.08em; text-transform:uppercase;
-  background:transparent; border:none; color:var(--enc2); padding:4px 16px; cursor:pointer; }
-.figbtn+.figbtn{ border-left:1px solid var(--trait); }
-.figbtn[aria-pressed="true"]{ background:var(--enc); color:var(--pap); }
-.figbtn:focus-visible{ outline:2px solid var(--or); outline-offset:1px; }
-
-/* ---------- Légende d'aspects ---------- */
-.asp-legende{ display:flex; gap:14px; justify-content:center; flex-wrap:wrap; font-size:.72rem;
-  color:var(--enc2); margin-top:8px; }
+.figure{ width:100%; height:auto; display:block; }
+.asp-legende{ display:flex; gap:10px; justify-content:center; flex-wrap:wrap; font-size:.68rem; margin-top:6px; }
 .asp-legende span{ display:inline-flex; align-items:center; }
-.asp-legende span::before{ content:""; display:inline-block; width:16px; height:0;
-  border-top:2px solid currentColor; margin-right:5px; }
-.asp-legende .lh{ color:var(--vert); } .asp-legende .lt{ color:var(--rouge); } .asp-legende .ln{ color:var(--or); }
-.asp-legende .lh, .asp-legende .lt, .asp-legende .ln{ }
+.asp-legende span::before{ content:""; display:inline-block; width:14px; border-top:2px solid currentColor; margin-right:4px; }
+.asp-legende .lh{ color:var(--vert); } .asp-legende .lt{ color:var(--rouge); } .asp-legende .ln,.asp-legende .ls{ color:var(--or); }
+.fig-leg{ font-size:.74rem; color:var(--enc2); font-style:italic; margin:6px 0 0; text-align:center; }
 
-/* ---------- Tableau des positions ---------- */
-.positions{ width:100%; border-collapse:collapse; font-size:.92rem; margin-top:4px; }
-.positions caption{ font-family:var(--titre); font-size:1.15rem; letter-spacing:.12em; text-transform:uppercase; color:var(--enc); text-align:left; padding-bottom:6px; border-bottom:1px solid var(--enc); margin-bottom:4px;}
-.positions th, .positions td{ text-align:left; padding:4px 6px; border-bottom:1px dotted var(--trait); }
-.positions th{ font-weight:600; color:var(--enc2); font-size:.74rem; text-transform:uppercase; letter-spacing:.1em; }
-.positions .g{ font-family:var(--glyph); font-size:1.15rem; }
-.positions .pos{ white-space:nowrap; }
-.positions .dig{ font-size:.82rem; color:var(--enc2); font-style:italic; }
-.positions .r{ color:var(--bleu); font-weight:600; }
-.dig.dom,.dig.exa{ color:var(--vert)!important; font-style:normal!important; }
-.dig.det,.dig.chu{ color:var(--rouge)!important; }
+/* ---------- Roue ---------- */
+.w-ring{ fill:none; stroke:var(--enc); stroke-width:1.3; }
+.w-hub{ fill:var(--enc2); } .w-dot{ fill:var(--enc); }
+.w-zod{ stroke:var(--trait); stroke-width:.7; }
+.w-cusp{ stroke:var(--enc3); stroke-width:.7; stroke-dasharray:2 2; }
+.w-axis{ stroke:var(--or); stroke-width:1.6; }
+.w-tick{ stroke:var(--enc2); stroke-width:.5; opacity:.7; }
+.w-sign{ font-family:var(--glyph); font-size:16px; fill:var(--rouge); cursor:help; }
+.w-house{ font-family:var(--serif); font-size:10px; fill:var(--enc3); cursor:pointer; }
+.w-axislab{ font-family:var(--serif); font-size:10px; fill:var(--or); letter-spacing:.05em; cursor:help; }
+.w-star{ stroke:var(--or); stroke-width:1.4; cursor:help; }
+.w-stem{ stroke:var(--enc3); stroke-width:.5; }
+.w-pl{ font-family:var(--glyph); font-size:18px; fill:var(--enc); cursor:pointer; }
+.w-pl.retro{ fill:var(--bleu); }
+.w-pt{ font-family:var(--glyph); font-size:14px; fill:var(--or); cursor:help; }
+.w-deg{ font-family:var(--serif); font-size:8.5px; fill:var(--enc2); }
+.w-asp{ stroke-width:1; } .w-hit{ stroke:transparent; stroke-width:11; pointer-events:stroke; cursor:help; }
+.w-asp-h{ stroke:var(--vert); opacity:.65; } .w-asp-t{ stroke:var(--rouge); opacity:.55; } .w-asp-n{ stroke:var(--or); opacity:.8; stroke-width:1.3; }
+.w-aspbg{ fill:var(--pap); } .w-aspg{ font-family:var(--glyph); font-size:9px; cursor:help; }
+.w-aspg.w-asp-h{ fill:var(--vert); stroke:none; opacity:1; } .w-aspg.w-asp-t{ fill:var(--rouge); stroke:none; opacity:1; } .w-aspg.w-asp-n{ fill:var(--or); stroke:none; opacity:1; }
 
-/* ---------- Bulletin / interprétation ---------- */
-.bulletin h2, .panneau h2{
-  font-family:var(--titre); font-weight:600; letter-spacing:.1em; text-transform:uppercase;
-  font-size:1.5rem; color:var(--enc); margin:26px 0 8px; padding-bottom:4px;
-  border-bottom:1px solid var(--trait);
-}
-.bulletin h3{
-  font-family:var(--titre); font-weight:600; font-size:1.16rem; letter-spacing:.06em;
-  color:var(--rouge); margin:18px 0 2px; text-transform:uppercase;
-}
-.bulletin p{ margin:.5em 0; text-align:justify; hyphens:auto; }
-.bulletin .chapeau{ font-size:1.04rem; }
-.bulletin .chapeau::first-letter{
-  font-family:var(--titre); font-weight:600; float:left; font-size:3.4rem; line-height:.78;
-  padding:6px 8px 0 0; color:var(--rouge);
-}
-.verdict{
-  border:1px solid var(--enc); border-left:4px solid var(--or);
-  background:var(--pap2); padding:12px 16px; margin:18px 0; font-style:italic; font-size:1.04rem;
-}
-.verdict b{ font-style:normal; }
-.tendance{ display:inline-block; font-family:var(--titre); font-weight:600; letter-spacing:.08em;
-  text-transform:uppercase; font-size:.92rem; padding:2px 10px; border:1px solid currentColor; }
+/* ---------- Carré ---------- */
+.bord{ fill:none; stroke:var(--enc); stroke-width:2.2; } .filet{ fill:none; stroke:var(--enc2); stroke-width:1; }
+.cell{ fill:transparent; } .cell.angul{ fill:rgba(156,122,46,.06); }
+.num{ font-family:var(--serif); font-size:11px; fill:var(--enc3); cursor:pointer; }
+.sg{ font-family:var(--glyph); font-size:16px; fill:var(--rouge); }
+.pl{ font-family:var(--glyph); font-size:19px; fill:var(--enc); cursor:pointer; } .pl.retro{ fill:var(--bleu); }
+.axe{ font-family:var(--serif); font-size:10px; fill:var(--or); }
+
+/* ---------- Feuille / sommaire ---------- */
+.toc{ display:flex; flex-wrap:wrap; gap:2px 4px; border:1px solid var(--trait); background:var(--pap2); padding:6px 8px; margin-bottom:12px; font-size:.76rem; }
+.toc a{ color:var(--enc2); padding:1px 6px; border-right:1px solid var(--trait2); }
+.toc a:last-child{ border-right:none; } .toc a:hover{ color:var(--rouge); }
+
+.fiche{ display:grid; grid-template-columns:repeat(auto-fit,minmax(120px,1fr)); gap:1px; background:var(--trait); border:1px solid var(--trait); margin-bottom:14px; }
+.fi{ background:var(--pap); padding:5px 9px; display:flex; flex-direction:column; }
+.fi span{ font-size:.64rem; text-transform:uppercase; letter-spacing:.1em; color:var(--enc2); }
+.fi b{ font-family:var(--titre); font-size:1.05rem; }
+
+.bloc{ margin-bottom:22px; scroll-margin-top:10px; }
+.bloc h3{ font-family:var(--titre); font-weight:600; letter-spacing:.08em; text-transform:uppercase; font-size:1.25rem;
+  color:var(--enc); margin:0 0 8px; padding-bottom:3px; border-bottom:1px solid var(--enc); }
+.bloc h4{ font-family:var(--titre); font-weight:600; font-size:1.08rem; letter-spacing:.04em; color:var(--rouge); margin:14px 0 3px; }
+.bloc.flash, .maison.flash, .astre.flash{ animation:flash 1.4s ease; }
+@keyframes flash{ 0%{ background:rgba(156,122,46,.28);} 100%{ background:transparent; } }
+
+/* tables */
+.grid{ width:100%; border-collapse:collapse; font-size:.84rem; margin-bottom:6px; }
+.grid caption{ font-family:var(--titre); font-size:1rem; letter-spacing:.06em; text-transform:uppercase; text-align:left; color:var(--enc2); padding-bottom:3px; }
+.grid th,.grid td{ text-align:left; padding:3px 6px; border-bottom:1px dotted var(--trait); vertical-align:top; }
+.grid th{ font-size:.66rem; text-transform:uppercase; letter-spacing:.08em; color:var(--enc2); font-weight:600; border-bottom:1px solid var(--enc); }
+.grid .g{ font-size:1.05rem; } .grid .pos{ white-space:nowrap; cursor:help; } .grid .num2{ text-align:right; font-variant-numeric:tabular-nums; }
+.grid .num2.pos{ color:var(--vert); } .grid .num2.neg{ color:var(--rouge); } .grid .st{ font-size:.78rem; color:var(--enc2); }
+.grid tr.pt td,.grid tr.ang td{ color:var(--enc2); } .grid tr.ang td{ border-top:1px solid var(--trait2); }
+.dg{ font-size:.72rem; padding:0 4px; border-radius:2px; } .dg.dom,.dg.exa{ color:#fff; background:var(--vert); } .dg.det,.dg.chu{ color:#fff; background:var(--rouge); }
+.dg.tri,.dg.min{ color:var(--enc2); border:1px solid var(--trait); } .dg.per{ color:var(--enc3); font-style:italic; }
+.r{ color:var(--bleu); font-weight:600; }
+.digrid td{ font-size:.8rem; } .digrid .sm{ font-size:.72rem; }
+
+/* aspectarium */
+.aspgrid{ width:auto; } .aspgrid td{ width:30px; height:26px; text-align:center; border:1px solid var(--trait2); padding:1px; }
+.aspgrid .diag{ background:var(--pap2); font-size:1.1rem; } .aspc{ cursor:help; line-height:1; } .aspc small{ display:block; font-size:.6rem; color:var(--enc2); }
+.aspc.asp-h{ background:rgba(63,93,52,.14); } .aspc.asp-t{ background:rgba(124,43,34,.12); } .aspc.asp-n{ background:rgba(156,122,46,.14); }
+.asp-h{ color:var(--vert); } .asp-t{ color:var(--rouge); } .asp-n{ color:var(--or); }
+
+.liste{ list-style:none; padding:0; margin:6px 0; font-size:.86rem; }
+.liste li{ padding:2px 0; border-bottom:1px dotted var(--trait); }
+.liste li.rec{ border:none; margin-top:6px; }
+
+/* maisons & astres */
+.maison,.astre{ border-left:3px solid var(--trait); padding:2px 0 6px 12px; margin:10px 0; scroll-margin-top:10px; }
+.maison h4,.astre h4{ margin-top:4px; }
+.mnum{ display:inline-block; font-family:var(--titre); color:var(--or); border:1px solid var(--or); padding:0 6px; margin-right:4px; }
+.mdom{ font-style:italic; color:var(--enc2); margin:2px 0; } .occ-d{ font-size:.88rem; margin:2px 0; } .vide{ color:var(--enc3); font-style:italic; }
+.astre h4 .big{ font-size:1.4rem; } .corps{ color:var(--enc2); } .asp-line .g{ font-size:1.05rem; }
+
+/* tempérament */
+.temper{ margin:6px 0; } .thum{ display:grid; grid-template-columns:140px 1fr 44px; align-items:center; gap:8px; margin:3px 0; cursor:help; }
+.tlab{ font-size:.82rem; } .tlab small{ color:var(--enc2); } .tbar{ background:var(--pap3); height:13px; border:1px solid var(--trait); }
+.tbar i{ display:block; height:100%; } .t-sanguin{ background:#c9a227; } .t-cholerique{ background:var(--rouge); } .t-melancolique{ background:var(--bleu); } .t-flegmatique{ background:var(--vert); }
+.tpct{ text-align:right; font-variant-numeric:tabular-nums; font-size:.82rem; } .tsyn{ margin-top:8px; }
+
+/* jugement */
+.jugement .chapeau::first-letter{ font-family:var(--titre); font-weight:600; float:left; font-size:3rem; line-height:.75; padding:4px 7px 0 0; color:var(--rouge); }
+.verdict{ border:1px solid var(--enc); border-left:4px solid var(--or); background:var(--pap2); padding:10px 14px; margin:12px 0; font-style:italic; }
+.tendance{ display:inline-block; font-family:var(--titre); font-weight:600; letter-spacing:.06em; text-transform:uppercase; font-size:.85rem; padding:1px 9px; border:1px solid currentColor; font-style:normal; }
 .t-fav{ color:var(--vert); } .t-cont{ color:var(--or); } .t-tendu{ color:var(--rouge); } .t-neutre{ color:var(--enc2); }
+.gloss .sm,.sm{ font-size:.8rem; color:var(--enc2); }
 
-.aspects-list{ list-style:none; padding:0; margin:.4em 0; }
-.aspects-list li{ padding:3px 0; border-bottom:1px dotted var(--trait); }
-.aspects-list .g{ font-family:var(--glyph); font-size:1.05rem; }
-.asp-h{ color:var(--vert); } .asp-t{ color:var(--rouge); } .asp-n{ color:var(--enc2); }
-
-/* ---------- Formulaire natal ---------- */
-.form-natal{ display:flex; flex-wrap:wrap; gap:14px 18px; align-items:flex-end;
-  border:1px solid var(--trait); background:var(--pap2); padding:16px 18px; margin-bottom:10px; }
-.champ{ display:flex; flex-direction:column; gap:3px; }
-.champ label{ font-size:.7rem; text-transform:uppercase; letter-spacing:.12em; color:var(--enc2); }
-.champ input{ font-family:var(--serif); font-size:1rem; background:var(--pap); border:1px solid var(--enc3);
-  color:var(--enc); padding:6px 9px; }
+/* formulaire */
+.form-natal{ display:flex; flex-wrap:wrap; gap:10px 14px; align-items:flex-end; border:1px solid var(--trait); background:var(--pap2); padding:12px 14px; margin:8px 0; }
+.champ{ display:flex; flex-direction:column; gap:2px; } .champ label{ font-size:.64rem; text-transform:uppercase; letter-spacing:.1em; color:var(--enc2); }
+.champ input{ font-family:var(--serif); font-size:.95rem; background:var(--pap); border:1px solid var(--enc3); color:var(--enc); padding:5px 8px; }
 .champ input:focus{ outline:none; border-color:var(--or); box-shadow:0 0 0 2px rgba(156,122,46,.2); }
-.btn{ font-family:var(--titre); font-weight:600; letter-spacing:.1em; text-transform:uppercase; font-size:1rem;
-  background:var(--enc); color:var(--pap); border:1px solid var(--enc); padding:9px 22px; cursor:pointer; }
+.btn{ font-family:var(--titre); font-weight:600; letter-spacing:.08em; text-transform:uppercase; background:var(--enc); color:var(--pap); border:1px solid var(--enc); padding:8px 20px; cursor:pointer; }
 .btn:hover{ background:var(--rouge); border-color:var(--rouge); }
-.note-helio{ font-size:.78rem; color:var(--enc2); font-style:italic; margin:2px 0 16px; }
+.note-helio{ font-size:.74rem; color:var(--enc2); font-style:italic; margin:0 0 12px; }
 
-/* ---------- Pied ---------- */
-.pied{ margin-top:48px; border-top:3px double var(--enc); padding-top:16px; font-size:.82rem; color:var(--enc2); }
-.pied .hommage{ font-style:italic; }
-.pied a{ color:var(--rouge); }
-.tick{ font-variant-numeric:tabular-nums; }
+/* pied */
+.pied{ margin-top:40px; border-top:3px double var(--enc); padding-top:14px; font-size:.78rem; color:var(--enc2); }
+.pied .hommage{ font-style:italic; } .pied a{ color:var(--rouge); }
 
-/* impression */
-@media print{
-  .onglets,.form-natal .btn{ display:none; }
-  body{ background:#fff; }
-}
+/* bulle de survol */
+.bulle{ position:fixed; z-index:80; max-width:280px; background:var(--enc); color:var(--pap); border:1px solid var(--or);
+  padding:8px 11px; font-size:.8rem; line-height:1.4; white-space:pre-line; pointer-events:none; box-shadow:0 5px 16px var(--ombre); }
+.bulle[hidden]{ display:none; }
+
+@media print{ .onglets,.ctrls,.toc,.btn{ display:none; } .figcol{ position:static; } body{ background:#fff; } }

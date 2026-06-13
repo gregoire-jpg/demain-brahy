@@ -3,22 +3,21 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>DEMAIN — Bulletin des influences célestes</title>
-<meta name="description" content="Le ciel de l'instant établi et interprété selon les anciens — thème de l'heure et nativité, dans la tradition de l'astrologue belge Gustave-Lambert Brahy.">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<title>DEMAIN — Module d'astrologie traditionnelle</title>
+<meta name="description" content="Le ciel établi et jugé selon les anciens : thème de l'heure et nativité, dignités à cinq termes, almutén, tempérament, lots, étoiles fixes, quatre systèmes de maisons. Dans la tradition de G.-L. Brahy.">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
 <div class="wrap">
 
   <header class="masthead">
-    <p class="surtitre">Revue des influences du firmament &middot; Bruxelles</p>
+    <p class="surtitre">Module des influences du firmament &middot; Bruxelles</p>
     <h1 class="journal">DEMAIN<span class="pt">.</span></h1>
     <p class="devise">« Le ciel incline, mais ne contraint point » — établi et jugé selon les anciens</p>
     <div class="filet-date">
-      <span>An de grâce&nbsp;<b id="dateline">…</b></span>
-      <span id="hourline">Heure planétaire&nbsp;<b>…</b></span>
+      <span id="dateline">…</span>
+      <span id="hourline">…</span>
     </div>
   </header>
 
@@ -29,57 +28,71 @@
 
   <!-- ===================== CIEL DU MOMENT ===================== -->
   <section class="panneau" id="vue-ciel" role="tabpanel" aria-labelledby="tab-ciel">
-    <div class="colonnes">
-      <div class="figure">
-        <div class="figbasc" role="group" aria-label="Type de figure">
-          <button class="figbtn" type="button" data-mode="roue" aria-pressed="true">Roue</button>
-          <button class="figbtn" type="button" data-mode="carre" aria-pressed="false">Carré</button>
+    <div class="cockpit">
+      <aside class="figcol">
+        <div class="ctrls">
+          <div class="grp" role="group" aria-label="Figure">
+            <button class="figbtn" type="button" data-mode="roue" aria-pressed="true">Roue</button>
+            <button class="figbtn" type="button" data-mode="carre" aria-pressed="false">Carré</button>
+          </div>
+          <div class="grp grp-sys" role="group" aria-label="Maisons">
+            <button class="sysbtn" type="button" data-sys="whole" aria-pressed="true">Signes</button>
+            <button class="sysbtn" type="button" data-sys="porphyry" aria-pressed="false">Porphyre</button>
+            <button class="sysbtn" type="button" data-sys="placidus" aria-pressed="false">Placide</button>
+            <button class="sysbtn" type="button" data-sys="regiomontanus" aria-pressed="false">Régio.</button>
+          </div>
         </div>
-        <svg class="carre" id="carre-ciel" viewBox="0 0 400 400" aria-label="Figure du ciel de l'instant"></svg>
-        <div class="asp-legende"><span class="lh">Harmonie&nbsp;⚹&nbsp;△</span><span class="lt">Tension&nbsp;□&nbsp;☍</span><span class="ln">Conjonction&nbsp;☌</span></div>
-        <p class="fig-leg" id="leg-ciel">Roue du ciel : astres à leur degré, traits d'aspect au centre. Ascendant à gauche, maisons en signes entiers.</p>
-        <table class="positions" id="pos-ciel"><caption>Positions de l'heure</caption><tbody></tbody></table>
-      </div>
-      <div class="bulletin" id="bull-ciel">
-        <p class="chapeau">Calcul du firmament en cours…</p>
-      </div>
+        <svg class="figure" id="fig-ciel" viewBox="-24 -24 448 448" aria-label="Figure du ciel"></svg>
+        <div class="asp-legende"><span class="lh">Harmonie&nbsp;⚹&nbsp;△</span><span class="lt">Tension&nbsp;□&nbsp;☍</span><span class="ln">Conjonction&nbsp;☌</span><span class="ls">★ étoile fixe</span></div>
+        <p class="fig-leg">Survolez tout élément pour l'explication ; cliquez un astre ou une maison pour sa délinéation.</p>
+      </aside>
+      <div class="sheet" id="sheet-ciel"></div>
     </div>
   </section>
 
   <!-- ===================== THÈME NATAL ===================== -->
   <section class="panneau" id="vue-natal" role="tabpanel" aria-labelledby="tab-natal" hidden>
     <form class="form-natal" id="form-natal" autocomplete="off">
-      <div class="champ"><label for="n-lieu">Lieu de nativité</label><input id="n-lieu" type="text" value="Ottignies (Belgique)" size="18"></div>
+      <div class="champ"><label for="n-lieu">Lieu</label><input id="n-lieu" type="text" value="Ottignies (Belgique)" size="16"></div>
       <div class="champ"><label for="n-date">Date</label><input id="n-date" type="date" value="1986-05-22"></div>
       <div class="champ"><label for="n-heure">Heure (locale)</label><input id="n-heure" type="time" value="02:08"></div>
-      <div class="champ"><label for="n-lat">Latitude (N+)</label><input id="n-lat" type="number" step="0.0001" value="50.6649" size="9"></div>
-      <div class="champ"><label for="n-lon">Longitude (E+)</label><input id="n-lon" type="number" step="0.0001" value="4.5673" size="9"></div>
+      <div class="champ"><label for="n-lat">Lat. (N+)</label><input id="n-lat" type="number" step="0.0001" value="50.6649" size="8"></div>
+      <div class="champ"><label for="n-lon">Lon. (E+)</label><input id="n-lon" type="number" step="0.0001" value="4.5673" size="8"></div>
       <button class="btn" type="submit">Dresser le thème</button>
     </form>
-    <p class="note-helio">Heure entendue en temps civil belge (fuseau d'Europe/Bruxelles, heure d'été comprise). Positions géocentriques, zodiaque tropical, sept astres des anciens.</p>
-    <div class="colonnes">
-      <div class="figure">
-        <div class="figbasc" role="group" aria-label="Type de figure">
-          <button class="figbtn" type="button" data-mode="roue" aria-pressed="true">Roue</button>
-          <button class="figbtn" type="button" data-mode="carre" aria-pressed="false">Carré</button>
+    <p class="note-helio">Heure en temps civil belge (Europe/Bruxelles, heure d'été comprise). Positions géocentriques, zodiaque tropical, sept astres des anciens.</p>
+    <div class="cockpit">
+      <aside class="figcol">
+        <div class="ctrls">
+          <div class="grp" role="group" aria-label="Figure">
+            <button class="figbtn" type="button" data-mode="roue" aria-pressed="true">Roue</button>
+            <button class="figbtn" type="button" data-mode="carre" aria-pressed="false">Carré</button>
+          </div>
+          <div class="grp grp-sys" role="group" aria-label="Maisons">
+            <button class="sysbtn" type="button" data-sys="whole" aria-pressed="true">Signes</button>
+            <button class="sysbtn" type="button" data-sys="porphyry" aria-pressed="false">Porphyre</button>
+            <button class="sysbtn" type="button" data-sys="placidus" aria-pressed="false">Placide</button>
+            <button class="sysbtn" type="button" data-sys="regiomontanus" aria-pressed="false">Régio.</button>
+          </div>
         </div>
-        <svg class="carre" id="carre-natal" viewBox="0 0 400 400" aria-label="Figure de nativité"></svg>
-        <div class="asp-legende"><span class="lh">Harmonie&nbsp;⚹&nbsp;△</span><span class="lt">Tension&nbsp;□&nbsp;☍</span><span class="ln">Conjonction&nbsp;☌</span></div>
-        <p class="fig-leg" id="leg-natal"></p>
-        <table class="positions" id="pos-natal"><caption>Positions de naissance</caption><tbody></tbody></table>
-      </div>
-      <div class="bulletin" id="bull-natal"></div>
+        <svg class="figure" id="fig-natal" viewBox="-24 -24 448 448" aria-label="Figure de nativité"></svg>
+        <div class="asp-legende"><span class="lh">Harmonie&nbsp;⚹&nbsp;△</span><span class="lt">Tension&nbsp;□&nbsp;☍</span><span class="ln">Conjonction&nbsp;☌</span><span class="ls">★ étoile fixe</span></div>
+        <p class="fig-leg">Survolez tout élément pour l'explication ; cliquez un astre ou une maison pour sa délinéation.</p>
+      </aside>
+      <div class="sheet" id="sheet-natal"></div>
     </div>
   </section>
 
   <footer class="pied">
-    <p class="hommage">Dans la tradition de <b>Gustave-Lambert Brahy</b> (Liège 1894 — Bruxelles 1989), expert-comptable devenu astrologue, pionnier de l'astrologie mondiale et boursière, fondateur de l'Institut Astrologique de Belgique et de la revue <i>Demain</i> (1926), où il publiait ses bulletins d'influences.</p>
-    <p>Figure et jugements recalculés en continu d'après les positions réelles du ciel (éphéméride <i>Astronomy&nbsp;Engine</i>). Page sans serveur ni mouchard. — <a id="src-brahy" href="https://fr.wikipedia.org/wiki/Gustave_Lambert_Brahy" target="_blank" rel="noopener">Sur G.-L. Brahy</a></p>
+    <p class="hommage">Dans la tradition de <b>Gustave-Lambert Brahy</b> (Liège 1894 — Bruxelles 1989), pionnier de l'astrologie mondiale et boursière, fondateur de l'Institut Astrologique de Belgique et de la revue <i>Demain</i> (1926).</p>
+    <p>Calculs en temps réel, 100 % navigateur, sans serveur ni mouchard (éphéméride <i>Astronomy Engine</i> ; Ascendant et maisons validés par balayage d'horizon). — <a href="https://fr.wikipedia.org/wiki/Gustave_Lambert_Brahy" target="_blank" rel="noopener">Sur G.-L. Brahy</a></p>
   </footer>
-
 </div>
 
+<div class="bulle" id="bulle" hidden></div>
+
 <script src="vendor/astronomy.browser.min.js"></script>
+<script src="engine.js"></script>
 <script src="app.js"></script>
 </body>
 </html>
