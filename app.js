@@ -11,6 +11,8 @@ const A = window.Astronomy;
 const D2R = Math.PI / 180, R2D = 180 / Math.PI;
 const n360 = x => ((x % 360) + 360) % 360;
 const BXL = { lat: 50.8503, lon: 4.3517 };   // Bruxelles (hommage Brahy)
+let cielMode = 'roue', natalMode = 'roue';   // figure par défaut : la roue (aspects tracés)
+let lastCiel = null, lastNatal = null;        // derniers thèmes calculés (pour rebascule sans recalcul)
 
 /* ----------------------------- Tables ----------------------------- */
 const SIGNS = [
@@ -345,6 +347,68 @@ function drawSquare(svg, chart) {
   svg.innerHTML = html;
 }
 
+/* ------------------------ Roue du ciel ---------------------------- */
+function polar(cx, cy, r, deg) { const a = deg*D2R; return [cx + r*Math.cos(a), cy - r*Math.sin(a)]; }
+function screenAngle(lon, asc) { return n360(180 + (lon - asc)); }   // Ascendant à gauche, sens direct
+
+function drawWheel(svg, chart) {
+  const cx=200, cy=200, asc=chart.asc, mc=chart.mc;
+  const Rout=196, Rzin=160, Rtick=156, Rcusp=150, Rpl=134, Rdeg=117, Rasp=104;
+  const F = n => n.toFixed(1);
+  let h = '';
+  h += `<circle class="w-ring" cx="${cx}" cy="${cy}" r="${Rout}"/>`;
+  h += `<circle class="w-ring" cx="${cx}" cy="${cy}" r="${Rzin}"/>`;
+  h += `<circle class="w-ring" cx="${cx}" cy="${cy}" r="${Rcusp}"/>`;
+  h += `<circle class="w-ring2" cx="${cx}" cy="${cy}" r="${Rasp}"/>`;
+
+  // signes : cusps en signes entiers + glyphes
+  for (let s=0; s<12; s++) {
+    const a0 = screenAngle(s*30, asc);
+    const c1 = polar(cx,cy,Rcusp,a0), c2 = polar(cx,cy,Rout,a0);
+    h += `<line class="w-cusp" x1="${F(c1[0])}" y1="${F(c1[1])}" x2="${F(c2[0])}" y2="${F(c2[1])}"/>`;
+    const gm = polar(cx,cy,(Rout+Rzin)/2, screenAngle(s*30+15, asc));
+    h += `<text class="w-sign" x="${F(gm[0])}" y="${F(gm[1]+5)}" text-anchor="middle">${SIGNS[s].g}</text>`;
+  }
+  // graduations
+  for (let d=0; d<360; d+=2) {
+    const a = screenAngle(d, asc);
+    const t1 = polar(cx,cy,Rzin,a), t2 = polar(cx,cy, d%10===0?Rtick-4:Rtick, a);
+    h += `<line class="w-tick" x1="${F(t1[0])}" y1="${F(t1[1])}" x2="${F(t2[0])}" y2="${F(t2[1])}"/>`;
+  }
+  // axes Asc–Desc (horizon) et MC–FC (méridien)
+  const aMc = screenAngle(mc, asc);
+  const hl = polar(cx,cy,Rcusp,180), hr = polar(cx,cy,Rcusp,0);
+  h += `<line class="w-axis" x1="${F(hl[0])}" y1="${F(hl[1])}" x2="${F(hr[0])}" y2="${F(hr[1])}"/>`;
+  const mt = polar(cx,cy,Rcusp,aMc), mb = polar(cx,cy,Rcusp,n360(aMc+180));
+  h += `<line class="w-axis" x1="${F(mt[0])}" y1="${F(mt[1])}" x2="${F(mb[0])}" y2="${F(mb[1])}"/>`;
+  const lab = (txt,ang) => { const p = polar(cx,cy,Rout+9,ang); return `<text class="w-axislab" x="${F(p[0])}" y="${F(p[1]+3)}" text-anchor="middle">${txt}</text>`; };
+  h += lab('Asc',180) + lab('Desc',0) + lab('MC',aMc) + lab('FC',n360(aMc+180));
+
+  // traits d'aspect (sous les astres)
+  aspectsOf(chart.planets).forEach(a => {
+    const p1 = polar(cx,cy,Rasp,screenAngle(a.a.lon,asc)), p2 = polar(cx,cy,Rasp,screenAngle(a.b.lon,asc));
+    const cl = a.fam==='harmon'?'w-asp-h':a.fam==='tendu'?'w-asp-t':'w-asp-n';
+    h += `<line class="w-asp ${cl}" x1="${F(p1[0])}" y1="${F(p1[1])}" x2="${F(p2[0])}" y2="${F(p2[1])}"/>`;
+  });
+
+  // astres (écartés pour la lisibilité, mais reliés à leur vrai degré)
+  const items = chart.planets.map(p => ({ p, lon:p.lon, ang:screenAngle(p.lon,asc) })).sort((x,y)=>x.ang-y.ang);
+  for (let i=1; i<items.length; i++) if (items[i].ang - items[i-1].ang < 9) items[i].ang = items[i-1].ang + 9;
+  items.forEach(o => {
+    const ta = screenAngle(o.lon, asc), ga = o.ang, f = fmtLon(o.lon);
+    const s1 = polar(cx,cy,Rcusp,ta), s2 = polar(cx,cy,Rpl+7,ga);
+    h += `<line class="w-stem" x1="${F(s1[0])}" y1="${F(s1[1])}" x2="${F(s2[0])}" y2="${F(s2[1])}"/>`;
+    const gp = polar(cx,cy,Rpl,ga);
+    h += `<text class="w-pl${o.p.retro?' retro':''}" x="${F(gp[0])}" y="${F(gp[1]+6)}" text-anchor="middle">${o.p.g}</text>`;
+    const dp = polar(cx,cy,Rdeg,ga);
+    h += `<text class="w-deg" x="${F(dp[0])}" y="${F(dp[1]+3)}" text-anchor="middle">${f.deg}°${o.p.retro?' ℞':''}</text>`;
+  });
+  h += `<circle class="w-hub" cx="${cx}" cy="${cy}" r="2"/>`;
+  svg.innerHTML = h;
+}
+
+function drawFigure(svg, chart, mode) { if (mode==='carre') drawSquare(svg, chart); else drawWheel(svg, chart); }
+
 /* -------------------- Tableau des positions ----------------------- */
 function fillPositions(tbody, chart) {
   const etat = p => {
@@ -540,7 +604,8 @@ function renderCiel() {
   const ph = moonPhase(now);
   const app = moonApplication(now);
   const hour = planetaryHour(now, BXL.lat, BXL.lon);
-  drawSquare(document.getElementById('carre-ciel'), chart);
+  lastCiel = chart;
+  drawFigure(document.getElementById('carre-ciel'), chart, cielMode);
   fillPositions(document.querySelector('#pos-ciel tbody'), chart);
   document.getElementById('bull-ciel').innerHTML = jugeCiel(chart, ph, app, hour);
   // bandeau
@@ -560,7 +625,8 @@ function renderNatal() {
   const [H,Mi] = t.split(':').map(Number);
   const dateUTC = bxlWallToDate(Y,Mo,Da,H,Mi);
   const chart = buildChart(dateUTC, lat, lon);
-  drawSquare(document.getElementById('carre-natal'), chart);
+  lastNatal = chart;
+  drawFigure(document.getElementById('carre-natal'), chart, natalMode);
   fillPositions(document.querySelector('#pos-natal tbody'), chart);
   const fa = fmtLon(chart.asc), fm = fmtLon(chart.mc);
   document.getElementById('leg-natal').textContent =
@@ -585,6 +651,12 @@ function init() {
   document.getElementById('tab-ciel').addEventListener('click', ()=>setTab('ciel'));
   document.getElementById('tab-natal').addEventListener('click', ()=>{ setTab('natal'); });
   document.getElementById('form-natal').addEventListener('submit', e=>{ e.preventDefault(); renderNatal(); });
+  document.querySelectorAll('.figbtn').forEach(b => b.addEventListener('click', () => {
+    const mode = b.dataset.mode, sec = b.closest('.panneau').id;
+    b.parentNode.querySelectorAll('.figbtn').forEach(x => x.setAttribute('aria-pressed', String(x===b)));
+    if (sec==='vue-ciel') { cielMode = mode; if (lastCiel) drawFigure(document.getElementById('carre-ciel'), lastCiel, cielMode); }
+    else { natalMode = mode; if (lastNatal) drawFigure(document.getElementById('carre-natal'), lastNatal, natalMode); }
+  }));
   try { renderCiel(); } catch(e){ console.error(e); document.getElementById('bull-ciel').innerHTML = '<p>Erreur de calcul céleste : '+esc(e.message)+'</p>'; }
   try { renderNatal(); } catch(e){ console.error(e); }
   if (location.hash === '#natal') setTab('natal');
