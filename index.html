@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DEMAIN — Bulletin des influences célestes</title>
+<meta name="description" content="Le ciel de l'instant établi et interprété selon les anciens — thème de l'heure et nativité, dans la tradition de l'astrologue belge Gustave-Lambert Brahy.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="wrap">
+
+  <header class="masthead">
+    <p class="surtitre">Revue des influences du firmament &middot; Bruxelles</p>
+    <h1 class="journal">DEMAIN<span class="pt">.</span></h1>
+    <p class="devise">« Le ciel incline, mais ne contraint point » — établi et jugé selon les anciens</p>
+    <div class="filet-date">
+      <span>An de grâce&nbsp;<b id="dateline">…</b></span>
+      <span id="hourline">Heure planétaire&nbsp;<b>…</b></span>
+    </div>
+  </header>
+
+  <nav class="onglets" role="tablist" aria-label="Sections">
+    <button class="onglet" id="tab-ciel" role="tab" aria-selected="true" aria-controls="vue-ciel">Le ciel du moment</button>
+    <button class="onglet" id="tab-natal" role="tab" aria-selected="false" aria-controls="vue-natal">Thème de nativité</button>
+  </nav>
+
+  <!-- ===================== CIEL DU MOMENT ===================== -->
+  <section class="panneau" id="vue-ciel" role="tabpanel" aria-labelledby="tab-ciel">
+    <div class="colonnes">
+      <div class="figure">
+        <svg class="carre" id="carre-ciel" viewBox="0 0 400 400" aria-label="Figure du ciel de l'instant"></svg>
+        <p class="fig-leg" id="leg-ciel">Figure carrée du ciel, à la manière des anciens. Maisons en signes entiers, Ascendant à gauche.</p>
+        <table class="positions" id="pos-ciel"><caption>Positions de l'heure</caption><tbody></tbody></table>
+      </div>
+      <div class="bulletin" id="bull-ciel">
+        <p class="chapeau">Calcul du firmament en cours…</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== THÈME NATAL ===================== -->
+  <section class="panneau" id="vue-natal" role="tabpanel" aria-labelledby="tab-natal" hidden>
+    <form class="form-natal" id="form-natal" autocomplete="off">
+      <div class="champ"><label for="n-lieu">Lieu de nativité</label><input id="n-lieu" type="text" value="Ottignies (Belgique)" size="18"></div>
+      <div class="champ"><label for="n-date">Date</label><input id="n-date" type="date" value="1986-05-22"></div>
+      <div class="champ"><label for="n-heure">Heure (locale)</label><input id="n-heure" type="time" value="02:08"></div>
+      <div class="champ"><label for="n-lat">Latitude (N+)</label><input id="n-lat" type="number" step="0.0001" value="50.6649" size="9"></div>
+      <div class="champ"><label for="n-lon">Longitude (E+)</label><input id="n-lon" type="number" step="0.0001" value="4.5673" size="9"></div>
+      <button class="btn" type="submit">Dresser le thème</button>
+    </form>
+    <p class="note-helio">Heure entendue en temps civil belge (fuseau d'Europe/Bruxelles, heure d'été comprise). Positions géocentriques, zodiaque tropical, sept astres des anciens.</p>
+    <div class="colonnes">
+      <div class="figure">
+        <svg class="carre" id="carre-natal" viewBox="0 0 400 400" aria-label="Figure de nativité"></svg>
+        <p class="fig-leg" id="leg-natal"></p>
+        <table class="positions" id="pos-natal"><caption>Positions de naissance</caption><tbody></tbody></table>
+      </div>
+      <div class="bulletin" id="bull-natal"></div>
+    </div>
+  </section>
+
+  <footer class="pied">
+    <p class="hommage">Dans la tradition de <b>Gustave-Lambert Brahy</b> (Liège 1894 — Bruxelles 1989), expert-comptable devenu astrologue, pionnier de l'astrologie mondiale et boursière, fondateur de l'Institut Astrologique de Belgique et de la revue <i>Demain</i> (1926), où il publiait ses bulletins d'influences.</p>
+    <p>Figure et jugements recalculés en continu d'après les positions réelles du ciel (éphéméride <i>Astronomy&nbsp;Engine</i>). Page sans serveur ni mouchard. — <a id="src-brahy" href="https://fr.wikipedia.org/wiki/Gustave_Lambert_Brahy" target="_blank" rel="noopener">Sur G.-L. Brahy</a></p>
+  </footer>
+
+</div>
+
+<script src="vendor/astronomy.browser.min.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

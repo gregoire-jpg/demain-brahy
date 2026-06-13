@@ -1,0 +1,5 @@
+node_modules/
+preview-*.png
+rendered.html
+demain_*.png
+.DS_Store

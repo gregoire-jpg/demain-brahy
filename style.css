@@ -1,0 +1,168 @@
+/* ============================================================
+   DEMAIN — Bulletin des influences célestes
+   Esthétique : revue astrologique belge, années 1930.
+   Papier crème, encre sépia, filets doubles, sérif gravé.
+   ============================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=EB+Garamond:ital,wght@0,400;0,500;1,400&display=swap');
+
+:root{
+  --pap:#f3ead3;            /* papier */
+  --pap2:#efe3c4;           /* papier ombré */
+  --enc:#2b2117;            /* encre sépia foncée */
+  --enc2:#5a4a35;           /* encre adoucie */
+  --enc3:#8a7a5f;           /* encre la plus claire */
+  --or:#9c7a2e;             /* dorure passée */
+  --rouge:#7c2b22;          /* rouge de revue */
+  --bleu:#243a52;           /* bleu nuit (maléfiques/tension) */
+  --vert:#3f5d34;           /* vert (harmonie) */
+  --trait:#b9a877;          /* filets clairs */
+  --ombre:rgba(43,33,23,.18);
+  --serif:'EB Garamond', Georgia, 'Times New Roman', serif;
+  --titre:'Cormorant Garamond', Georgia, serif;
+  --glyph:'Segoe UI Symbol','Apple Symbols','Noto Sans Symbols2','DejaVu Sans', serif;
+}
+
+*{ box-sizing:border-box; }
+html{ -webkit-text-size-adjust:100%; }
+body{
+  margin:0;
+  font-family:var(--serif);
+  color:var(--enc);
+  background:
+    radial-gradient(circle at 18% 12%, rgba(255,255,255,.35), transparent 38%),
+    radial-gradient(circle at 82% 78%, rgba(120,90,40,.07), transparent 45%),
+    var(--pap);
+  background-attachment:fixed;
+  line-height:1.62;
+  font-size:18px;
+}
+/* fin grain papier */
+body::before{
+  content:"";
+  position:fixed; inset:0; pointer-events:none; z-index:0;
+  opacity:.05;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+.wrap{ position:relative; z-index:1; max-width:920px; margin:0 auto; padding:28px 22px 80px; }
+
+/* ---------- Bandeau / masthead ---------- */
+.masthead{ text-align:center; border-bottom:3px double var(--enc); padding-bottom:14px; margin-bottom:6px; }
+.surtitre{
+  font-family:var(--serif); text-transform:uppercase; letter-spacing:.42em;
+  font-size:.72rem; color:var(--enc2); margin:0 0 6px;
+}
+.journal{
+  font-family:var(--titre); font-weight:600; font-size:clamp(3.4rem,12vw,6.2rem);
+  line-height:.9; margin:0; letter-spacing:.04em; color:var(--enc);
+}
+.journal .pt{ color:var(--rouge); }
+.devise{ font-style:italic; font-size:1.02rem; color:var(--enc2); margin:8px 0 0; }
+.filet-date{
+  display:flex; justify-content:space-between; align-items:center; gap:10px;
+  border-top:1px solid var(--enc); border-bottom:1px solid var(--enc);
+  margin-top:14px; padding:5px 2px; font-size:.74rem; text-transform:uppercase; letter-spacing:.18em;
+  color:var(--enc2);
+}
+.filet-date b{ color:var(--enc); font-weight:600; }
+
+/* ---------- Onglets ---------- */
+.onglets{ display:flex; gap:0; justify-content:center; margin:22px 0 10px; flex-wrap:wrap; }
+.onglet{
+  font-family:var(--titre); font-size:1.28rem; font-weight:600; letter-spacing:.06em;
+  background:transparent; border:1px solid var(--trait); border-bottom:none;
+  color:var(--enc2); padding:8px 22px; cursor:pointer; text-transform:uppercase;
+  position:relative; top:1px;
+}
+.onglet+.onglet{ border-left:none; }
+.onglet[aria-selected="true"]{ color:var(--rouge); background:var(--pap2); border-color:var(--enc); border-bottom:1px solid var(--pap2); }
+.onglet:focus-visible{ outline:2px solid var(--or); outline-offset:2px; }
+
+/* ---------- Sections ---------- */
+.panneau{ border-top:1px solid var(--enc); padding-top:18px; }
+.panneau[hidden]{ display:none; }
+
+.colonnes{ display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1.05fr); gap:30px; align-items:start; }
+@media(max-width:760px){ .colonnes{ grid-template-columns:1fr; gap:22px; } }
+
+/* ---------- Carré astrologique ---------- */
+.figure{ text-align:center; }
+.carre{ width:100%; max-width:420px; height:auto; margin:0 auto; display:block; }
+.carre .bord{ fill:none; stroke:var(--enc); stroke-width:2.2; }
+.carre .filet{ fill:none; stroke:var(--enc2); stroke-width:1; }
+.carre .cell{ fill:transparent; }
+.carre .cell.angul{ fill:rgba(156,122,46,.06); }
+.carre .num{ font-family:var(--serif); font-size:11px; fill:var(--enc3); }
+.carre .sg{ font-family:var(--glyph); font-size:17px; fill:var(--rouge); }
+.carre .pl{ font-family:var(--glyph); font-size:21px; fill:var(--enc); }
+.carre .pl.retro{ fill:var(--bleu); }
+.carre .deg{ font-family:var(--serif); font-size:9.5px; fill:var(--enc2); }
+.carre .axe{ font-family:var(--serif); font-size:10px; fill:var(--or); letter-spacing:.1em; }
+.fig-leg{ font-size:.8rem; color:var(--enc2); font-style:italic; margin-top:8px; }
+
+/* ---------- Tableau des positions ---------- */
+.positions{ width:100%; border-collapse:collapse; font-size:.92rem; margin-top:4px; }
+.positions caption{ font-family:var(--titre); font-size:1.15rem; letter-spacing:.12em; text-transform:uppercase; color:var(--enc); text-align:left; padding-bottom:6px; border-bottom:1px solid var(--enc); margin-bottom:4px;}
+.positions th, .positions td{ text-align:left; padding:4px 6px; border-bottom:1px dotted var(--trait); }
+.positions th{ font-weight:600; color:var(--enc2); font-size:.74rem; text-transform:uppercase; letter-spacing:.1em; }
+.positions .g{ font-family:var(--glyph); font-size:1.15rem; }
+.positions .pos{ white-space:nowrap; }
+.positions .dig{ font-size:.82rem; color:var(--enc2); font-style:italic; }
+.positions .r{ color:var(--bleu); font-weight:600; }
+.dig.dom,.dig.exa{ color:var(--vert)!important; font-style:normal!important; }
+.dig.det,.dig.chu{ color:var(--rouge)!important; }
+
+/* ---------- Bulletin / interprétation ---------- */
+.bulletin h2, .panneau h2{
+  font-family:var(--titre); font-weight:600; letter-spacing:.1em; text-transform:uppercase;
+  font-size:1.5rem; color:var(--enc); margin:26px 0 8px; padding-bottom:4px;
+  border-bottom:1px solid var(--trait);
+}
+.bulletin h3{
+  font-family:var(--titre); font-weight:600; font-size:1.16rem; letter-spacing:.06em;
+  color:var(--rouge); margin:18px 0 2px; text-transform:uppercase;
+}
+.bulletin p{ margin:.5em 0; text-align:justify; hyphens:auto; }
+.bulletin .chapeau{ font-size:1.04rem; }
+.bulletin .chapeau::first-letter{
+  font-family:var(--titre); font-weight:600; float:left; font-size:3.4rem; line-height:.78;
+  padding:6px 8px 0 0; color:var(--rouge);
+}
+.verdict{
+  border:1px solid var(--enc); border-left:4px solid var(--or);
+  background:var(--pap2); padding:12px 16px; margin:18px 0; font-style:italic; font-size:1.04rem;
+}
+.verdict b{ font-style:normal; }
+.tendance{ display:inline-block; font-family:var(--titre); font-weight:600; letter-spacing:.08em;
+  text-transform:uppercase; font-size:.92rem; padding:2px 10px; border:1px solid currentColor; }
+.t-fav{ color:var(--vert); } .t-cont{ color:var(--or); } .t-tendu{ color:var(--rouge); } .t-neutre{ color:var(--enc2); }
+
+.aspects-list{ list-style:none; padding:0; margin:.4em 0; }
+.aspects-list li{ padding:3px 0; border-bottom:1px dotted var(--trait); }
+.aspects-list .g{ font-family:var(--glyph); font-size:1.05rem; }
+.asp-h{ color:var(--vert); } .asp-t{ color:var(--rouge); } .asp-n{ color:var(--enc2); }
+
+/* ---------- Formulaire natal ---------- */
+.form-natal{ display:flex; flex-wrap:wrap; gap:14px 18px; align-items:flex-end;
+  border:1px solid var(--trait); background:var(--pap2); padding:16px 18px; margin-bottom:10px; }
+.champ{ display:flex; flex-direction:column; gap:3px; }
+.champ label{ font-size:.7rem; text-transform:uppercase; letter-spacing:.12em; color:var(--enc2); }
+.champ input{ font-family:var(--serif); font-size:1rem; background:var(--pap); border:1px solid var(--enc3);
+  color:var(--enc); padding:6px 9px; }
+.champ input:focus{ outline:none; border-color:var(--or); box-shadow:0 0 0 2px rgba(156,122,46,.2); }
+.btn{ font-family:var(--titre); font-weight:600; letter-spacing:.1em; text-transform:uppercase; font-size:1rem;
+  background:var(--enc); color:var(--pap); border:1px solid var(--enc); padding:9px 22px; cursor:pointer; }
+.btn:hover{ background:var(--rouge); border-color:var(--rouge); }
+.note-helio{ font-size:.78rem; color:var(--enc2); font-style:italic; margin:2px 0 16px; }
+
+/* ---------- Pied ---------- */
+.pied{ margin-top:48px; border-top:3px double var(--enc); padding-top:16px; font-size:.82rem; color:var(--enc2); }
+.pied .hommage{ font-style:italic; }
+.pied a{ color:var(--rouge); }
+.tick{ font-variant-numeric:tabular-nums; }
+
+/* impression */
+@media print{
+  .onglets,.form-natal .btn{ display:none; }
+  body{ background:#fff; }
+}
