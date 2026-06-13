@@ -46,11 +46,10 @@ const PLANETS = [
   { key:'saturn',  nom:'Saturne', g:'♄', body:'Saturn',  chald:0, nature:'malef',  sect:'jour', genre:'M', joie:12, vmoy:0.034 },
 ];
 const PMAP = Object.fromEntries(PLANETS.map(p => [p.key, p]));
-const BODYMAP = { Sun:'Sun', Moon:'Moon', Mercury:'Mercury', Venus:'Venus', Mars:'Mars', Jupiter:'Jupiter', Saturn:'Saturn' };
 
 const EXALT = { sun:{s:0,d:19}, moon:{s:1,d:3}, mercury:{s:5,d:15}, venus:{s:11,d:27}, mars:{s:9,d:28}, jupiter:{s:3,d:15}, saturn:{s:6,d:21} };
 // triplicité dorothéenne : jour / nuit / participant (par élément)
-const TRIPL = { Feu:['sun','jupiter','saturn'], Terre:['venus','moon','mars'], Air:['saturn','mercury','jupiter'], Eau:['venus','mars','moon'] };
+const TRIPL = { Feu:['sun','jupiter','saturn'], Terre:['venus','moon','mars'], Air:['saturn','mercury','jupiter'], Eau:['mars','venus','moon'] };
 // bornes égyptiennes : par signe, [ruler, degré supérieur]
 const BOUNDS = [
   [['jupiter',6],['venus',12],['mercury',20],['mars',25],['saturn',30]],       // Bélier
@@ -70,7 +69,7 @@ const BOUNDS = [
 const FACE_ORDER = ['mars','sun','venus','mercury','moon','saturn','jupiter'];
 const ASPECTS = [
   { deg:0,   nom:'conjonction', g:'☌', maj:true,  fam:'neutre' },
-  { deg:60,  nom:'sextile',     g:'⚹', maj:false, fam:'harmon' },
+  { deg:60,  nom:'sextile',     g:'⚹', maj:true,  fam:'harmon' },
   { deg:90,  nom:'carré',       g:'□', maj:true,  fam:'tendu'  },
   { deg:120, nom:'trigone',     g:'△', maj:true,  fam:'harmon' },
   { deg:180, nom:'opposition',  g:'☍', maj:true,  fam:'tendu'  },
@@ -114,6 +113,8 @@ function tropLon(body, date) {
   return n360(A.SphereFromVector(e).lon);
 }
 function obliq(date) {
+  // obliquité VRAIE de la date (même repère que les planètes via ECT) ; repli sur la moyenne IAU1980
+  try { const t = A.e_tilt(A.MakeTime(date)); if (t && Number.isFinite(t.tobl)) return t.tobl; } catch (e) {}
   const T = A.MakeTime(date).tt / 36525;
   return 23 + 26/60 + (21.448 - 46.8150*T - 0.00059*T*T + 0.001813*T*T*T) / 3600;
 }
@@ -129,11 +130,12 @@ function bodySpeed(body, date) {
   let d = b - a; if (d>180) d-=360; if (d<-180) d+=360;
   return d * 2;
 }
-function sunAltitude(date, lat, lonE) {
+function bodyAlt(body, date, lat, lonE) {
   const obs = new A.Observer(lat, lonE, 0);
-  const eq = A.Equator(A.Body.Sun, date, obs, true, true);
-  return A.Horizon(date, obs, eq.ra, eq.dec, null).altitude;
+  const eq = A.Equator(A.Body[body], date, obs, true, true);
+  return A.Horizon(date, obs, eq.ra, eq.dec, null).altitude;   // géométrique (sans réfraction)
 }
+function sunAltitude(date, lat, lonE) { return bodyAlt('Sun', date, lat, lonE); }
 // longitude écliptique tropicale d'une étoile (précessée à la date) depuis RA/Dec J2000
 function starLon(ra, dec, date) {
   const raR = ra*D2R, decR = dec*D2R;
@@ -166,7 +168,7 @@ function quadrantScan(rm, eps, lat) {
     const dec=Math.asin(Math.sin(epsR)*Math.sin(l))*R2D, de=dec*D2R;
     let x=Math.tan(latR)*Math.tan(de); x=Math.max(-0.99999,Math.min(0.99999,x));
     const AD=Math.asin(x)*R2D, DSA=90+AD, NSA=90-AD;
-    // angle horaire depuis le MC, déroulé en continu (0 au MC, décroît vers l'est)
+    // angle horaire (positif) depuis le MC, déroulé en continu : 0 au MC, croît vers l'est jusqu'à +180 au FC
     let ha=al-rm; if(prevHA!==null){ while(ha+baseHA-prevHA>180) baseHA-=360; while(ha+baseHA-prevHA<-180) baseHA+=360; }
     const haU=ha+baseHA; prevHA=haU;
     // intersection équateur du cercle de position de Régiomontanus (axe N-S de l'horizon)
@@ -189,7 +191,7 @@ function bracketCusp(samples, key, target) {
 // Placide : cuspide où l'angle horaire vaut la fraction voulue du semi-arc (diurne/nocturne)
 function bracketPlacidus(samples, frac, below) {
   let prev=null;
-  for (const p of samples){ const target = below ? -(p.DSA + frac*p.NSA) : -frac*p.DSA;
+  for (const p of samples){ const target = below ? (p.DSA + frac*p.NSA) : (frac*p.DSA);  // cibles positives (haU croît vers l'est)
     const res=p.haU-target;
     if (prev && prev.res*res<=0){ const t=Math.abs(res-prev.res)<1e-12?0:-prev.res/(res-prev.res); return n360(prev.lonU + t*(p.lonU-prev.lonU)); }
     prev={lonU:p.lonU, res};
@@ -217,14 +219,22 @@ function housesRegiomontanus(rm, eps, lat) {
   return c;
 }
 function buildHouses(system, rm, eps, lat, ascSign, asc, mc) {
-  switch (system) {
-    case 'porphyry':      return { cusps: housesPorphyry(asc, mc), quadrant:true };
-    case 'placidus':      return { cusps: housesPlacidus(rm, eps, lat), quadrant:true };
-    case 'regiomontanus': return { cusps: housesRegiomontanus(rm, eps, lat), quadrant:true };
-    default:              return { cusps: housesWhole(ascSign), quadrant:false };
-  }
+  if (system === 'whole' || !system) return { cusps: housesWhole(ascSign), quadrant:false };
+  // un système à quadrants n'est défini que si les deux arcs MC→ASC et ASC→IC sont strictement dans (0,180)
+  const ic = n360(mc+180), arc1 = n360(asc-mc), arc2 = n360(ic-asc);
+  if (arc1 <= 0.5 || arc1 >= 179.5 || arc2 <= 0.5 || arc2 >= 179.5)
+    return { cusps: housesWhole(ascSign), quadrant:false, degraded:'polaire' };  // circumpolaire : repli honnête
+  let cusps;
+  if (system === 'porphyry') cusps = housesPorphyry(asc, mc);
+  else if (system === 'placidus') cusps = housesPlacidus(rm, eps, lat);
+  else if (system === 'regiomontanus') cusps = housesRegiomontanus(rm, eps, lat);
+  else return { cusps: housesWhole(ascSign), quadrant:false };
+  if (cusps.some(c => !Number.isFinite(c)))                                       // échec numérique résiduel
+    return { cusps: housesWhole(ascSign), quadrant:false, degraded:'circumpolaire' };
+  return { cusps, quadrant:true };
 }
 function houseOf(lon, cusps) {
+  if (!Number.isFinite(lon) || cusps.some(c => !Number.isFinite(c))) return 1;
   for (let i=0;i<12;i++){ const span=n360(cusps[(i+1)%12]-cusps[i])||360; if (n360(lon-cusps[i]) < span) return i+1; }
   return 12;
 }
@@ -246,7 +256,8 @@ function dignities(key, lon, isDay) {
   out.rulers.face = faceRuler(sign, deg);
   if (SIGNS[sign].dom === key) out.domicile = true;
   if (EXALT[key] && EXALT[key].s === sign) out.exaltation = true;
-  if (tri.includes(key)) out.triplicity = true;
+  if (out.rulers.triplicity === key) out.triplicity = true;          // seul le maître EN SECTE compte (+3)
+  out.triplicityPart = (tri[2] === key && tri[2] !== out.rulers.triplicity); // participant : mentionné, sans poids
   if (out.rulers.bound === key) out.bound = true;
   if (out.rulers.face === key) out.face = true;
   if (SIGNS[(sign+6)%12].dom === key) out.detriment = true;
@@ -298,8 +309,8 @@ function buildLots(asc, sun, moon, day, planets) {
   const lot=(a,b,c)=>n360(a + b - c);
   const fortune = day ? lot(asc,moon,sun) : lot(asc,sun,moon);
   const spirit  = day ? lot(asc,sun,moon) : lot(asc,moon,sun);
-  const eros    = day ? lot(asc,lon('venus'),spirit) : lot(asc,spirit,lon('venus'));
-  const necessity = day ? lot(asc,fortune,lon('mercury')) : lot(asc,lon('mercury'),fortune);
+  const eros    = day ? lot(asc,spirit,lon('venus')) : lot(asc,lon('venus'),spirit);          // Paulus : jour Asc+Esprit−Vénus
+  const necessity = day ? lot(asc,lon('mercury'),fortune) : lot(asc,fortune,lon('mercury'));  // Paulus : jour Asc+Mercure−Fortune
   const victory = day ? lot(asc,lon('jupiter'),spirit) : lot(asc,spirit,lon('jupiter'));
   const courage = day ? lot(asc,fortune,lon('mars')) : lot(asc,lon('mars'),fortune);
   return [
@@ -320,51 +331,74 @@ function aspectFamily(aKey,bKey,asp){
   if (ben(aKey)||ben(bKey)) return 'harmon';
   return 'neutre';
 }
-function receptionBetween(a,b){
-  // a reçoit b si b se trouve dans un signe où a a dignité (domicile/exalt)
-  const rec=(host,guest)=>{ const s=host.sign; const r=[];
-    if (SIGNS[s].dom===guest.key) r.push('domicile');
-    if (EXALT[guest.key]&&EXALT[guest.key].s===s) r.push('exaltation');
-    return r; };
-  const aInB = rec(a,b), bInA = rec(b,a);     // a dans dignité de b ? etc.
-  return { aReceivedByB: rec(b,a), bReceivedByA: rec(a,b) };
-}
 function aspectsOf(planets){
   const res=[];
   for (let i=0;i<planets.length;i++) for (let j=i+1;j<planets.length;j++){
     const a=planets[i], b=planets[j], d=sep(a.lon,b.lon);
     for (const asp of ASPECTS){
-      const orb=MOIETY[a.key]+MOIETY[b.key]-(asp.maj?0:2);
-      if (Math.abs(d-asp.deg)<=orb){
+      const orb=MOIETY[a.key]+MOIETY[b.key];                  // somme des moitiés (Lilly), identique aux 5 aspects
+      const realOrb=Math.abs(d-asp.deg);
+      if (realOrb<=orb){
         const la=a.lon+a.speed*0.02, lb=b.lon+b.speed*0.02;
-        const applying = Math.abs(sep(la,lb)-asp.deg) < Math.abs(d-asp.deg);
-        res.push({ a,b, asp, orb:Math.abs(d-asp.deg), applying, partile: Math.floor(a.deg)===Math.floor(b.deg),
-                   fam: aspectFamily(a.key,b.key,asp) });
+        const applying = Math.abs(sep(la,lb)-asp.deg) < realOrb;
+        // partile : « même numéro de degré » ; pour la conjonction à cheval sur une borne de signe, replier sur l'orbe réel
+        const partile = asp.deg===0 ? realOrb<1 : (Math.floor(a.deg)===Math.floor(b.deg));
+        res.push({ a,b, asp, orb:realOrb, applying, partile, fam: aspectFamily(a.key,b.key,asp) });
         break;
       }
     }
   }
   return res.sort((x,y)=>x.orb-y.orb);
 }
-function mutualReceptions(planets){
+// réception : un astre « reçoit » l'autre s'il a une dignité au lieu où l'autre se trouve (5 dignités)
+const DIGN_ORDER = ['domicile','exaltation','triplicity','bound','face'];
+const DIGN_FR = { domicile:'domicile', exaltation:'exaltation', triplicity:'triplicité', bound:'borne', face:'face' };
+const DIGN_STRONG = { domicile:true, exaltation:true };
+function receptionsOf(a, b, isDay){
+  const da = dignities(a.key, b.lon, isDay);   // dignités de a là où b se tient → a reçoit b
+  return DIGN_ORDER.filter(k => da[k]);
+}
+function mutualReceptions(planets, isDay){
   const out=[];
   for (let i=0;i<planets.length;i++) for (let j=i+1;j<planets.length;j++){
     const a=planets[i], b=planets[j];
-    const aByB = (SIGNS[b.sign].dom===a.key?'domicile':null) || (EXALT[a.key]&&EXALT[a.key].s===b.sign?'exaltation':null);
-    const bByA = (SIGNS[a.sign].dom===b.key?'domicile':null) || (EXALT[b.key]&&EXALT[b.key].s===a.sign?'exaltation':null);
-    if (aByB && bByA) out.push({ a,b, kindA:aByB, kindB:bByA });
+    const aRecB = receptionsOf(a, b, isDay), bRecA = receptionsOf(b, a, isDay);
+    if (aRecB.length && bRecA.length)
+      out.push({ a, b, kindA:DIGN_FR[aRecB[0]], kindB:DIGN_FR[bRecA[0]],
+                 strong: aRecB.some(k=>DIGN_STRONG[k]) && bRecA.some(k=>DIGN_STRONG[k]) });
   }
   return out;
 }
+// aspects ptolémaïques majeurs des astres aux angles et à la Part de Fortune (orbe = moitié de l'astre seul)
+function aspectsToPoints(planets, targets){
+  const res=[];
+  planets.forEach(p => targets.forEach(t => {
+    const d=sep(p.lon,t.lon);
+    for (const asp of ASPECTS){ if (Math.abs(d-asp.deg) <= MOIETY[p.key]){ res.push({ a:p, b:t, asp, orb:Math.abs(d-asp.deg) }); break; } }
+  }));
+  return res.sort((x,y)=>x.orb-y.orb);
+}
 
 /* ---------------------------- Lune -------------------------------- */
-function moonPhase(date){
-  const e=n360(tropLon('Moon',date)-tropLon('Sun',date));
-  const ill=Math.round(A.Illumination(A.Body.Moon,date).phase_fraction*100);
+function moonPhase(date, moonLon, sunLon){
+  const ml = moonLon!=null ? moonLon : tropLon('Moon',date);
+  const sl = sunLon!=null ? sunLon : tropLon('Sun',date);
+  const e=n360(ml-sl);
+  const ill=Math.round((1-Math.cos(e*D2R))/2*100);     // fraction illuminée géométrique (évite un appel d'éphéméride)
   const names=['Nouvelle Lune','Premier croissant','Premier Quartier','Lune gibbeuse croissante',
                'Pleine Lune','Lune gibbeuse décroissante','Dernier Quartier','Lune balsamique'];
   const idx=Math.floor(n360(e+22.5)/45);
   return { nom:names[idx], waxing:e<180, illum:ill, elong:e, quarter:Math.floor(e/90) };
+}
+// dernière syzygie (nouvelle/pleine lune) avant la date — degré de la lunation prénatale
+function prenatalSyzygy(date){
+  let best=null;
+  for (const target of [0,180]){
+    let t = A.SearchMoonPhase(target, new Date(date.getTime()-31*86400000), 32), last=null;
+    while (t && t.date.getTime() <= date.getTime()){ last=t.date; t = A.SearchMoonPhase(target, new Date(t.date.getTime()+86400000), 32); }
+    if (last && (!best || last.getTime() > best.time)) best = { time:last.getTime(), date:last };
+  }
+  return best ? tropLon('Moon', best.date) : null;
 }
 function moonMansion(moonLon){ const i=Math.floor(n360(moonLon)/(360/28))%28; return { index:i, nom:MANSIONS[i] }; }
 function moonApplication(date){
@@ -398,12 +432,21 @@ function planetaryHour(date, lat, lonE){
   const obs=new A.Observer(lat,lonE,0);
   const rise=a=>A.SearchRiseSet(A.Body.Sun,obs,+1,a,2), set=a=>A.SearchRiseSet(A.Body.Sun,obs,-1,a,2);
   let sr=rise(new Date(date.getTime()-30*3600000));
+  // régions polaires (jour/nuit continu) : pas de lever exploitable → repli sur le jour civil
+  if (!sr){
+    const wd=weekdayBxl(date), drC=DAYRULER[wd], dayRuler=PLANETS.find(p=>p.chald===drC);
+    return { isDay: bodyAlt('Sun',date,lat,lonE)>0, num:1, ruler:dayRuler, dayRuler, weekday:wd, segStart:null, segEnd:null, polar:true };
+  }
   while(true){ const nx=rise(new Date(sr.date.getTime()+3600000)); if(nx&&nx.date.getTime()<=date.getTime()) sr=nx; else break; }
-  const ss=set(sr.date); let isDay, hourInPeriod, segStart, segEnd;
-  if (date.getTime()<ss.date.getTime()){ isDay=true; const len=(ss.date-sr.date)/12; hourInPeriod=Math.floor((date-sr.date)/len);
+  const ss=set(sr.date);
+  let isDay, hourInPeriod, segStart=null, segEnd=null;
+  if (ss && date.getTime()<ss.date.getTime()){ isDay=true; const len=(ss.date-sr.date)/12; hourInPeriod=Math.floor((date-sr.date)/len);
     segStart=new Date(sr.date.getTime()+hourInPeriod*len); segEnd=new Date(segStart.getTime()+len); }
-  else { isDay=false; const nextSr=rise(ss.date); const len=(nextSr.date-ss.date)/12; const i=Math.floor((date-ss.date)/len);
-    hourInPeriod=12+i; segStart=new Date(ss.date.getTime()+i*len); segEnd=new Date(segStart.getTime()+len); }
+  else { isDay=false; const nextSr=rise((ss||sr).date);
+    if (ss && nextSr){ const len=(nextSr.date-ss.date)/12; const i=Math.max(0,Math.floor((date-ss.date)/len));
+      hourInPeriod=12+Math.min(11,i); segStart=new Date(ss.date.getTime()+i*len); segEnd=new Date(segStart.getTime()+len); }
+    else hourInPeriod=12;   // repli si coucher/lever indisponibles
+  }
   const wd=weekdayBxl(sr.date), drC=DAYRULER[wd];
   const ruler=PLANETS.find(p=>p.chald===((drC+hourInPeriod)%7)), dayRuler=PLANETS.find(p=>p.chald===drC);
   return { isDay, num:hourInPeriod+1, ruler, dayRuler, weekday:wd, segStart, segEnd };
@@ -413,6 +456,7 @@ function planetaryHour(date, lat, lonE){
 const ELEM_HUMOR = { Feu:'cholerique', Terre:'melancolique', Air:'sanguin', Eau:'flegmatique' };
 const PL_HUMOR = { sun:'cholerique', moon:'flegmatique', mercury:null, venus:'flegmatique', mars:'cholerique', jupiter:'sanguin', saturn:'melancolique' };
 const PHASE_HUMOR = ['sanguin','cholerique','melancolique','flegmatique']; // quartiers de lune
+const SEASON_HUMOR = { printemps:'sanguin', 'été':'cholerique', automne:'melancolique', hiver:'flegmatique' };
 function temperament(chart){
   const h={ sanguin:0, cholerique:0, melancolique:0, flegmatique:0 };
   const add=(hum,w)=>{ if(hum&&h[hum]!==undefined) h[hum]+=w; };
@@ -421,7 +465,7 @@ function temperament(chart){
   const ascRuler=chart.planets.find(p=>p.key===SIGNS[ascSign].dom);
   if (ascRuler){ add(ELEM_HUMOR[SIGNS[ascRuler.sign].elem], 2.5); add(PL_HUMOR[ascRuler.key], 1); }
   const sun=chart.planets.find(p=>p.key==='sun'), moon=chart.planets.find(p=>p.key==='moon');
-  add(ELEM_HUMOR[SIGNS[sun.sign].elem], 1.5);                                // saison (Soleil)
+  add(SEASON_HUMOR[SIGNS[sun.sign].saison], 1.5);                            // saison (quartier solaire, Galien/Lilly)
   add(ELEM_HUMOR[SIGNS[moon.sign].elem], 1.5);                               // Lune par signe
   add(PHASE_HUMOR[chart.phase.quarter], 1.5);                                // phase de la Lune
   const alm=almutenOfDegree(chart.asc, chart.day); add(PL_HUMOR[alm.planet], 1);  // almutén de l'ascendant
@@ -456,20 +500,24 @@ function buildChart(date, lat, lonE, system) {
     let solar=null;
     if (p.key!=='sun'){ const d=sep(lon,sunLon); if(d<0.283)solar='cazimi'; else if(d<8.5)solar='combuste'; else if(d<15)solar='sous les rayons'; }
     const ph=solarPhase(p.key,lon,sunLon);
-    // secte / hayz
+    // secte (Mercure convertible : oriental → diurne ; les luminaires suivent le thème)
     let inSect;
-    if (p.key==='mercury') inSect = (ph && ph.oriental)===day; else inSect=(p.sect==='jour')===day;
-    if (p.key==='sun'||p.key==='moon') inSect = ( (p.key==='sun')===day );
-    const aboveHorizon = sep(lon, mc) < 90 ? true : null; // approx: appartenance hémisphère diurne
-    const sameGender = SIGNS[sign].genre === (p.genre==='N' ? SIGNS[sign].genre : p.genre);
+    if (p.key==='sun'||p.key==='moon') inSect = ((p.key==='sun')===day);
+    else if (p.key==='mercury') inSect = (ph && ph.oriental)===day;
+    else inSect = (p.sect==='jour')===day;
+    // genre effectif (Mercure : oriental → masculin, occidental → féminin — Ptolémée)
+    let pGenre = p.genre; if (p.key==='mercury') pGenre = (ph && ph.oriental) ? 'M' : 'F';
+    const sameGender = SIGNS[sign].genre === pGenre;
+    // hayz : en secte + même genre + bon hémisphère (au-dessus de l'horizon le jour, en-dessous la nuit)
+    const above = bodyAlt(p.body, date, lat, lonE) > 0;
     const obj={ ...p, lon, speed:spd, retro:spd<0, sign, deg:lon-sign*30, house, dig, solar, oriental: ph?ph.oriental:null };
-    obj.inSect=inSect; obj.hayz = inSect && sameGender;
+    obj.inSect=inSect; obj.hayz = inSect && sameGender && (above===day);
     return obj;
   });
   // dignité accidentelle (après calcul des positions)
   planets.forEach(p=> p.acc = accidentals(p, {asc, mc}));
   const moon=planets.find(p=>p.key==='moon'), sun=planets.find(p=>p.key==='sun');
-  const phase=moonPhase(date);
+  const phase=moonPhase(date, moon.lon, sunLon);
   const lots=buildLots(asc, sun.lon, moon.lon, day, planets);
   // nœuds lunaires moyens
   const Tn=A.MakeTime(date).tt/36525;
@@ -478,18 +526,29 @@ function buildChart(date, lat, lonE, system) {
     house: H.quadrant?houseOf(lon,cusps):(((sign-ascSign)%12+12)%12+1) }; };
   const points=[ mkPoint('nodeN','Tête du Dragon','☊',node), mkPoint('nodeS','Queue du Dragon','☋',n360(node+180)) ]
     .concat(lots.map(l=>mkPoint(l.key,l.nom,l.g,l.lon)));
-  const chart={ date, lat, lonE, system, quadrant:H.quadrant, eps, rm, asc, mc, ascSign, day, cusps, planets, points, lots, phase };
+  const chart={ date, lat, lonE, system, quadrant:H.quadrant, degraded:H.degraded||null, eps, rm, asc, mc, ascSign, day, cusps, planets, points, lots, phase };
   chart.mansion=moonMansion(moon.lon);
   chart.app=moonApplication(date);
   chart.voc=voidOfCourse(moon, chart.app);
   chart.aspects=aspectsOf(planets);
-  chart.receptions=mutualReceptions(planets);
+  chart.receptions=mutualReceptions(planets, day);
+  // aspects majeurs aux angles et à la Part de Fortune
+  chart.angleAspects=aspectsToPoints(planets, [
+    { key:'asc', nom:'Ascendant', g:'Asc', lon:asc }, { key:'mc', nom:'Milieu du Ciel', g:'MC', lon:mc },
+    { key:'fortune', nom:'Part de Fortune', g:'⊗', lon:lots[0].lon } ]);
   chart.temperament=temperament(chart);
-  // almutén de la géniture (sur Asc, MC, Soleil, Lune, Fortune)
-  const places=[asc, mc, sun.lon, moon.lon, lots[0].lon];
+  // almutén de la géniture (al-Qabisi) : dignités essentielles sur 5 lieux + pondération accidentelle
+  const syz=prenatalSyzygy(date);
+  chart.syzygy=syz;
+  const places=[asc, syz!=null?syz:mc, sun.lon, moon.lon, lots[0].lon];   // Asc, syzygie prénatale, Soleil, Lune, Fortune
   const tally={}; places.forEach(L=>{ const a=almutenOfDegree(L,day); for(const k in a.score) tally[k]=(tally[k]||0)+a.score[k]; });
-  let alm=null,av=-1; for(const k in tally) if(tally[k]>av){av=tally[k];alm=k;}
-  chart.almuten={ planet:alm, score:av, tally };
+  const hr=planetaryHour(date, lat, lonE);
+  planets.forEach(p=>{ const ang=angularType(p.house); tally[p.key]=(tally[p.key]||0)+(ang==='angulaire'?5:ang==='succédent'?4:2); }); // angularité
+  tally[hr.dayRuler.key]=(tally[hr.dayRuler.key]||0)+7;   // maître du jour
+  tally[hr.ruler.key]=(tally[hr.ruler.key]||0)+6;         // maître de l'heure
+  const accOf=k=>{ const pp=planets.find(p=>p.key===k); return pp&&pp.acc?pp.acc.score:0; };
+  const cand=PLANETS.map(p=>({key:p.key, t:tally[p.key]||0})).sort((a,b)=> b.t-a.t || accOf(b.key)-accOf(a.key)); // départage par dignité accidentelle
+  chart.almuten={ planet:cand[0].key, score:cand[0].t, tally };
   // étoiles fixes conjointes (planètes + angles), orbe 1.5°
   chart.stars=[];
   const angles=[{key:'asc',nom:'Ascendant',lon:asc},{key:'mc',nom:'MC',lon:mc}];
@@ -500,9 +559,13 @@ function buildChart(date, lat, lonE, system) {
 }
 
 /* --------------------------- Utilitaires -------------------------- */
-function fmtLon(lon){ lon=n360(lon); const s=Math.floor(lon/30), d=lon-s*30, deg=Math.floor(d), m=Math.round((d-deg)*60);
-  const D=m===60?deg+1:deg, M=m===60?0:m; return { deg:D, min:M, sign:s, signNom:SIGNS[s].nom, signG:SIGNS[s].g,
-    txt:`${D}°${String(M).padStart(2,'0')}′ ${SIGNS[s].nom}`, short:`${D}°${SIGNS[s].g}` }; }
+function fmtLon(lon){
+  if (!Number.isFinite(lon)) return { deg:NaN, min:NaN, sign:0, signNom:'?', signG:'?', txt:'—', short:'—' };
+  lon=n360(lon); let s=Math.floor(lon/30), d=lon-s*30, deg=Math.floor(d), m=Math.round((d-deg)*60);
+  let D=deg, M=m; if (M===60){ M=0; D++; } if (D===30){ D=0; s=(s+1)%12; }   // débordement minute/degré → signe suivant
+  return { deg:D, min:M, sign:s, signNom:SIGNS[s].nom, signG:SIGNS[s].g,
+    txt:`${D}°${String(M).padStart(2,'0')}′ ${SIGNS[s].nom}`, short:`${D}°${SIGNS[s].g}` };
+}
 
 return { SIGNS, PLANETS, PMAP, ASPECTS, ROMAN, JOURS, MANSIONS, STARS, EXALT, TRIPL, BOUNDS, FACE_ORDER,
          n360, sep, fmtLon, tropLon, obliq, ascLon, mcLon, dignities, almutenOfDegree,

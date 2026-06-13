@@ -6,8 +6,8 @@
 
 :root{
   --pap:#f3ead3; --pap2:#ece0c0; --pap3:#e6d8b4;
-  --enc:#2b2117; --enc2:#5a4a35; --enc3:#8a7a5f;
-  --or:#9c7a2e; --rouge:#7c2b22; --bleu:#243a52; --vert:#3f5d34;
+  --enc:#2b2117; --enc2:#574734; --enc3:#6f6048;
+  --or:#866820; --rouge:#7c2b22; --bleu:#243a52; --vert:#3a5530;   /* or/enc3 assombris pour le contraste AA du texte */
   --trait:#c3b083; --trait2:#d8c89c; --ombre:rgba(43,33,23,.18);
   --serif:'EB Garamond',Georgia,serif; --titre:'Cormorant Garamond',Georgia,serif;
   --glyph:'Segoe UI Symbol','Apple Symbols','Noto Sans Symbols2','DejaVu Sans',serif;
@@ -170,3 +170,38 @@ sup{ font-size:.7em; }
 .bulle[hidden]{ display:none; }
 
 @media print{ .onglets,.ctrls,.toc,.btn{ display:none; } .figcol{ position:static; } body{ background:#fff; } }
+
+/* ---------- Accessibilité : focus visible partout ---------- */
+:focus-visible{ outline:2px solid var(--or); outline-offset:2px; }
+a:focus-visible, button:focus-visible, select:focus-visible, [tabindex]:focus-visible{ outline:2px solid var(--or); outline-offset:2px; }
+svg text:focus-visible{ outline:2px solid var(--or); }            /* glyphes/numéros focalisables dans la figure */
+.lien{ cursor:pointer; }
+.onglet:focus-visible, .figbtn:focus-visible, .sysbtn:focus-visible{ outline:2px solid var(--or); outline-offset:-2px; }
+
+/* ---------- Mouvement réduit ---------- */
+@media (prefers-reduced-motion: reduce){
+  .bloc.flash, .maison.flash, .astre.flash{ animation:none; background:rgba(134,104,32,.18); }
+  html{ scroll-behavior:auto; }
+}
+
+/* ---------- Sélecteur de fuseau & erreurs de formulaire ---------- */
+.champ select{ font-family:var(--serif); font-size:.95rem; background:var(--pap); border:1px solid var(--enc3); color:var(--enc); padding:5px 8px; }
+.champ select:focus{ outline:none; border-color:var(--or); box-shadow:0 0 0 2px rgba(134,104,32,.2); }
+.form-err{ flex-basis:100%; color:var(--rouge); font-size:.84rem; margin:4px 0 0; font-weight:600; }
+.form-err:empty{ display:none; }
+
+/* ---------- Avis de repli (hautes latitudes) ---------- */
+.notice{ background:#f6e9c8; border:1px solid var(--or); border-left:3px solid var(--rouge); padding:7px 11px; font-size:.86rem; margin:0 0 12px; }
+
+/* ---------- Lisibilité / responsive ---------- */
+.fi span{ font-size:.68rem; }
+.w-deg{ font-size:9px; }
+@media (max-width:560px){
+  body{ font-size:15px; }
+  .aspgrid, .digrid, .grid{ font-size:.78rem; }
+  .bloc{ overflow-x:auto; }                 /* les tables denses défilent au lieu de déborder */
+  .aspgrid td{ width:26px; height:24px; }
+  .thum{ grid-template-columns:110px 1fr 40px; }
+  .fiche{ grid-template-columns:repeat(2,1fr); }
+  .form-natal{ gap:8px 10px; }
+}

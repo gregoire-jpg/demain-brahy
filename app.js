@@ -69,8 +69,8 @@ const ASP_DEF = {
   opposition:"Opposition (180°) — face-à-face : polarité, mise en balance, tension à équilibrer.",
 };
 const POINT_DEF = {
-  nodeN:"Tête du Dragon (nœud nord de la Lune) — point d'accroissement, où les choses prennent et augmentent.",
-  nodeS:"Queue du Dragon (nœud sud) — point de déperdition, où les choses se relâchent et se dissipent.",
+  nodeN:"Tête du Dragon (nœud nord moyen de la Lune) — point d'accroissement, où les choses prennent et augmentent.",
+  nodeS:"Queue du Dragon (nœud sud moyen) — point de déperdition, où les choses se relâchent et se dissipent.",
   fortune:"Part de Fortune — lot du corps, de la santé et de la fortune matérielle ; ce qui vient sans peine.",
   spirit:"Part de l'Esprit — lot de l'âme, de l'action volontaire, du métier et de la réputation.",
   eros:"Part de l'Amour — lot du désir, des attachements et de ce que l'on convoite.",
@@ -119,8 +119,13 @@ function planetBulle(p){
 }
 function pointBulle(pt){ return POINT_DEF[pt.key] ? `${pt.nom} — ${fmtLon(pt.lon).txt}\n${POINT_DEF[pt.key]}` : `${pt.nom} — ${fmtLon(pt.lon).txt}`; }
 
+function figSummary(chart){
+  const a=fmtLon(chart.asc), m=fmtLon(chart.mc), sys=(SYSTEMS.find(s=>s[0]===chart.system)||[,'signes entiers'])[1];
+  return `Figure du thème, ${chart.day?'diurne':'nocturne'}. Ascendant ${a.deg}° ${a.signNom}, Milieu du Ciel ${m.deg}° ${m.signNom}. Maisons : ${sys}. Sept astres ; détail complet dans les tableaux qui suivent.`;
+}
 function drawWheel(svg, chart){
   svg.setAttribute('viewBox','-24 -24 448 448');
+  svg.setAttribute('role','img'); svg.setAttribute('aria-label', figSummary(chart));
   const cx=200, cy=200, asc=chart.asc, mc=chart.mc, cusps=chart.cusps;
   const Rout=196, Rz=164, Rcusp=164, Rpl=140, Rdeg=127, Rhouse=106, Rasp=94;
   let h='';
@@ -141,7 +146,7 @@ function drawWheel(svg, chart){
     h+=`<line class="${angle?'w-axis':'w-cusp'}" x1="${F(c1[0])}" y1="${F(c1[1])}" x2="${F(c2[0])}" y2="${F(c2[1])}"/>`;
     const mid=cusps[i]+n360(cusps[(i+1)%12]-cusps[i])/2;
     const hp=polar(cx,cy,Rhouse,sAng(mid,asc));
-    h+=`<text class="w-house lien" data-goto="maison-${i+1}" data-bulle="${esc('Maison '+ROMAN[i+1]+' — '+HOUSE_MEAN[i+1].dom+'\\n(cliquer)')}" x="${F(hp[0])}" y="${F(hp[1]+3.5)}" text-anchor="middle">${ROMAN[i+1]}</text>`;
+    h+=`<text class="w-house lien" tabindex="0" role="link" data-goto="maison-${i+1}" aria-label="${esc('Maison '+ROMAN[i+1]+' : '+HOUSE_MEAN[i+1].dom)}" data-bulle="${esc('Maison '+ROMAN[i+1]+' — '+HOUSE_MEAN[i+1].dom+'\\n(cliquer pour la lecture)')}" x="${F(hp[0])}" y="${F(hp[1]+3.5)}" text-anchor="middle">${ROMAN[i+1]}</text>`;
   }
   // étiquettes d'angles
   const lab=(t,lon,bul)=>{ const p=polar(cx,cy,Rout+13,sAng(lon,asc)); return `<text class="w-axislab" data-bulle="${esc(bul)}" x="${F(p[0])}" y="${F(p[1]+3)}" text-anchor="middle">${t}</text>`; };
@@ -175,8 +180,8 @@ function drawWheel(svg, chart){
     const gp=polar(cx,cy,Rpl,ga);
     const bul=o.type==='pl'?planetBulle(o.src):pointBulle(o.src);
     const cls=o.type==='pt'?'w-pt':('w-pl'+(o.retro?' retro':''));
-    const goto=o.type==='pl'?` data-goto="astre-${o.key}"`:'';
-    h+=`<text class="${cls} lien"${goto} data-bulle="${esc(bul)}" x="${F(gp[0])}" y="${F(gp[1]+6)}" text-anchor="middle">${o.g}</text>`;
+    const goto=o.type==='pl'?` data-goto="astre-${o.key}" role="link"`:' role="img"';
+    h+=`<text class="${cls} lien" tabindex="0"${goto} aria-label="${esc(o.src.nom+' '+fmtLon(o.lon).txt)}" data-bulle="${esc(bul)}" x="${F(gp[0])}" y="${F(gp[1]+6)}" text-anchor="middle">${o.g}</text>`;
     const dp=polar(cx,cy,Rdeg,ga);
     h+=`<text class="w-deg" x="${F(dp[0])}" y="${F(dp[1]+3)}" text-anchor="middle">${o.deg}°${o.retro?'℞':''}</text>`;
   });
@@ -186,6 +191,7 @@ function drawWheel(svg, chart){
 
 function drawSquare(svg, chart){
   svg.setAttribute('viewBox','0 0 400 400');
+  svg.setAttribute('role','img'); svg.setAttribute('aria-label', figSummary(chart));
   const S=400,M=200,Q=100,T=300;
   const P={A:[0,0],B:[S,0],C:[S,S],D:[0,S],T:[M,0],R:[S,M],Bo:[M,S],L:[0,M],O:[M,M],p1:[Q,Q],p2:[T,Q],p3:[T,T],p4:[Q,T]};
   const CELLS={1:['L','p1','O','p4'],2:['D','L','p4'],3:['D','Bo','p4'],4:['Bo','p4','O','p3'],5:['C','Bo','p3'],6:['C','R','p3'],7:['R','p2','O','p3'],8:['B','R','p2'],9:['B','T','p2'],10:['T','p2','O','p1'],11:['A','T','p1'],12:['A','L','p1']};
@@ -197,12 +203,12 @@ function drawSquare(svg, chart){
     const pts=CELLS[hh].map(k=>P[k]); const cx=pts.reduce((s,p)=>s+p[0],0)/pts.length, cy=pts.reduce((s,p)=>s+p[1],0)/pts.length;
     const signIdx=((chart.ascSign+hh-1)%12+12)%12;
     html+=`<polygon class="cell${angular.has(hh)?' angul':''}" points="${pts.map(p=>p.join(',')).join(' ')}"/>`;
-    html+=`<text class="num lien" data-goto="maison-${hh}" x="${cx}" y="${cy-16}" text-anchor="middle">${ROMAN[hh]}</text>`;
+    html+=`<text class="num lien" tabindex="0" role="link" data-goto="maison-${hh}" aria-label="${esc('Maison '+ROMAN[hh]+' : '+HOUSE_MEAN[hh].dom)}" x="${cx}" y="${cy-16}" text-anchor="middle">${ROMAN[hh]}</text>`;
     html+=`<text class="sg" x="${cx}" y="${cy-2}" text-anchor="middle">${SIGNS[signIdx].g}</text>`;
     byH[hh].forEach((p,i)=>{ const cols=byH[hh].length>2?2:1,col=i%cols,row=Math.floor(i/cols);
       const x=cx+(cols>1?(col?14:-14):0), y=cy+16+row*15;
-      const goto=p.body?` data-goto="astre-${p.key}"`:''; const bul=p.body?planetBulle(p):pointBulle(p);
-      html+=`<text class="pl${p.retro?' retro':''} lien"${goto} data-bulle="${esc(bul)}" x="${x}" y="${y}" text-anchor="middle">${p.g}</text>`; });
+      const goto=p.body?` data-goto="astre-${p.key}" role="link"`:' role="img"'; const bul=p.body?planetBulle(p):pointBulle(p);
+      html+=`<text class="pl${p.retro?' retro':''} lien" tabindex="0"${goto} aria-label="${esc(p.nom+' '+fmtLon(p.lon).txt)}" data-bulle="${esc(bul)}" x="${x}" y="${y}" text-anchor="middle">${p.g}</text>`; });
   }
   html+=`<text class="axe" x="6" y="${M-4}">ASC</text><text class="axe" x="${M}" y="14" text-anchor="middle">MC</text>`;
   svg.innerHTML=html;
@@ -224,7 +230,7 @@ function etat(p){ const e=[]; if(p.retro)e.push('<span class="r">℞</span>'); i
 function panelPositions(chart){
   let r=`<table class="grid"><caption>Positions & dignités</caption><tr><th>Astre</th><th>Position</th><th>V°/j</th><th>M.</th><th>Dignités</th><th>Sc.</th><th>État</th></tr>`;
   chart.planets.forEach(p=>{ const f=fmtLon(p.lon);
-    r+=`<tr><td><a class="lien" data-goto="astre-${p.key}"><span class="g">${p.g}</span> ${p.nom}</a></td>`
+    r+=`<tr><td><a class="lien" href="#astre-${p.key}" data-goto="astre-${p.key}"><span class="g">${p.g}</span> ${p.nom}</a></td>`
       +`<td class="pos" data-bulle="${esc(planetBulle(p))}">${f.deg}°${String(f.min).padStart(2,'0')}′ <span class="g">${f.signG}</span></td>`
       +`<td class="num2">${p.speed.toFixed(2)}</td><td>${ROMAN[p.house]}</td><td>${digBadges(p)}</td>`
       +`<td class="num2 ${p.dig.score<0?'neg':p.dig.score>0?'pos':''}">${p.dig.score>0?'+':''}${p.dig.score}</td><td class="st">${etat(p)}</td></tr>`; });
@@ -265,8 +271,14 @@ function panelAspectarian(chart){
   r+=`<ul class="liste">`;
   chart.aspects.forEach(a=>{ const cl=a.fam==='harmon'?'asp-h':a.fam==='tendu'?'asp-t':'asp-n';
     r+=`<li><span class="g">${a.a.g} ${a.asp.g} ${a.b.g}</span> <b>${a.a.nom} ${a.asp.nom} ${a.b.nom}</b> <span class="${cl}">(${a.applying?'appliquant':'séparant'}, orbe ${a.orb.toFixed(1)}°${a.partile?', partile':''})</span></li>`; });
-  if(chart.receptions.length){ r+=`<li class="rec"><b>Réceptions mutuelles :</b> ${chart.receptions.map(x=>`${x.a.nom} ↔ ${x.b.nom} (${x.kindA}/${x.kindB})`).join(' ; ')}</li>`; }
+  if(chart.receptions.length){ r+=`<li class="rec"><b>Réceptions mutuelles :</b> ${chart.receptions.map(x=>`${x.a.nom} (${x.kindA}) ↔ ${x.b.nom} (${x.kindB}) <span class="${x.strong?'asp-h':'asp-n'}">[${x.strong?'forte':'faible'}]</span>`).join(' ; ')}</li>`; }
   r+=`</ul>`;
+  if(chart.angleAspects && chart.angleAspects.length){
+    r+=`<h4>Aspects aux angles et à la Part de Fortune</h4><ul class="liste">`;
+    chart.angleAspects.forEach(a=>{ const cl=a.asp.fam==='harmon'?'asp-h':a.asp.fam==='tendu'?'asp-t':'asp-n';
+      r+=`<li><span class="g">${a.a.g} ${a.asp.g}</span> <b>${a.a.nom}</b> ${a.asp.nom} <b>${a.b.nom}</b> <span class="${cl}">(orbe ${a.orb.toFixed(1)}°)</span></li>`; });
+    r+=`</ul>`;
+  }
   return r;
 }
 
@@ -274,7 +286,7 @@ function panelHouses(chart){
   // interprétation MAISON PAR MAISON
   const byH={}; for(let i=1;i<=12;i++) byH[i]=[];
   chart.planets.forEach(p=>byH[p.house].push(p));
-  let r='';
+  let r = chart.degraded ? `<p class="notice">⚠ Aux latitudes circumpolaires, les systèmes à quadrants (Porphyre, Placide, Régiomontanus) sont indéfinis : repli honnête sur les <b>signes entiers</b>.</p>` : '';
   for(let hh=1;hh<=12;hh++){
     const hm=HOUSE_MEAN[hh];
     // signe sur la cuspide + maître de la maison
@@ -285,7 +297,7 @@ function panelHouses(chart){
     r+=`<p class="mdom">${cap(hm.dom)}.</p>`;
     r+=`<p><b>${fmtLon(cuspLon).deg}° ${SIGNS[cuspSign].nom}</b> ${chart.quadrant?'à la cuspide':'occupe la maison'} ; son maître ${leP(lord)}<b>${lord.nom}</b> est en ${fmtLon(lord.lon).deg}° ${SIGNS[lord.sign].nom} (${lord.dig.label}), maison ${ROMAN[lord.house]} — c'est par lui que se conduisent ces affaires.</p>`;
     if(occ.length){
-      r+=`<p class="occ">Y séjourne${occ.length>1?'nt':''} : `+occ.map(p=>`<a class="lien" data-goto="astre-${p.key}"><span class="g">${p.g}</span> ${p.nom}</a> (${p.dig.label})`).join(', ')+`.</p>`;
+      r+=`<p class="occ">Y séjourne${occ.length>1?'nt':''} : `+occ.map(p=>`<a class="lien" href="#astre-${p.key}" data-goto="astre-${p.key}"><span class="g">${p.g}</span> ${p.nom}</a> (${p.dig.label})`).join(', ')+`.</p>`;
       occ.forEach(p=>{ r+=`<p class="occ-d"><span class="g">${p.g}</span> ${planetInHouse(p)}</p>`; });
     } else {
       r+=`<p class="vide">Aucun astre n'y séjourne : la maison s'exprime surtout par son maître.</p>`;
@@ -373,11 +385,11 @@ function judgmentCiel(chart, hour){
   h+=`<div class="verdict"><span class="tendance ${td.cl}">${td.t}</span> &nbsp;<b>—</b> ${VERDICT[td.t]}</div>`;
   return h;
 }
-function judgmentNatal(chart, lieu, dateUTC){
+function judgmentNatal(chart, lieu, dateUTC, tz){
   const sun=chart.planets.find(p=>p.key==='sun'), moon=chart.planets.find(p=>p.key==='moon');
   const ascRuler=chart.planets.find(p=>p.key===SIGNS[chart.ascSign].dom);
   const sect=chart.day?sun:moon; const t=chart.temperament;
-  let h=`<p class="chapeau">Né le <b>${fmtDate(dateUTC)}</b> à <b>${fmtTime(dateUTC)}</b>, à <b>${esc(lieu)}</b>. Le signe <b>${SIGNS[chart.ascSign].nom}</b> se levait (Ascendant ${fmtLon(chart.asc).deg}°${String(fmtLon(chart.asc).min).padStart(2,'0')}′), marquant le tempérament.</p>`;
+  let h=`<p class="chapeau">Né le <b>${fmtDate(dateUTC,tz)}</b> à <b>${fmtTime(dateUTC,tz)}</b>, à <b>${esc(lieu)}</b>. Le signe <b>${SIGNS[chart.ascSign].nom}</b> se levait (Ascendant ${fmtLon(chart.asc).deg}°${String(fmtLon(chart.asc).min).padStart(2,'0')}′), marquant le tempérament.</p>`;
   h+=`<p><b>Complexion :</b> ${TEMPER[t.dominant].nom.toLowerCase()} (${TEMPER[t.dominant].q}), de second ${TEMPER[t.second].nom.toLowerCase()} — ${TEMPER[t.dominant].t}.</p>`;
   h+=`<p><b>Secte :</b> thème ${chart.day?'diurne':'nocturne'} ; le luminaire de la secte est ${leP(sect)}<b>${sect.nom}</b>, guide premier. <b>Maître de l'ascendant :</b> ${leP(ascRuler)}<b>${ascRuler.nom}</b> en ${SIGNS[ascRuler.sign].nom} (${ascRuler.dig.label}), maison ${ROMAN[ascRuler.house]}. <b>Almutén de la géniture :</b> ${PMAP[chart.almuten.planet].nom} (score ${chart.almuten.score}).</p>`;
   h+=`<p>Le <b>Soleil</b> en ${SIGNS[sun.sign].nom} (maison ${ROMAN[sun.house]}) figure l'esprit et le but ; la <b>Lune</b> en ${SIGNS[moon.sign].nom} (maison ${ROMAN[moon.house]}), le corps et les humeurs. Voir le détail astre par astre et maison par maison ci-dessous.</p>`;
@@ -414,7 +426,7 @@ const SECTIONS_NATAL = [['fig','Figure'],['positions','Positions'],['aspects','A
 function buildSheet(view, chart, extra){
   const isCiel = view==='ciel';
   const secs = isCiel?SECTIONS_CIEL:SECTIONS_NATAL;
-  const nav = `<nav class="toc">`+secs.map(s=>`<a class="lien" data-goto="${view}-sec-${s[0]}">${s[1]}</a>`).join('')+`</nav>`;
+  const nav = `<nav class="toc" aria-label="Sommaire du thème">`+secs.map(s=>`<a class="lien" href="#${view}-sec-${s[0]}" data-goto="${view}-sec-${s[0]}">${s[1]}</a>`).join('')+`</nav>`;
   const sec=(id,titre,inner,cls)=>`<section class="bloc ${cls||''}" id="${view}-sec-${id}"><h3>${titre}</h3>${inner}</section>`;
   let html = nav;
   // résumé compact (fiche)
@@ -436,48 +448,65 @@ function buildSheet(view, chart, extra){
   html += sec('temperament', isCiel?'Climat & tempérament du moment':'Tempérament & complexion', panelTemperament(chart)+(isCiel?panelMoon(chart):''));
   html += sec('dignites','Table des dignités essentielles', panelDignities(chart));
   if(isCiel) html += sec('jugement','Bulletin de l\'heure', judgmentCiel(chart, extra.hour),'jugement');
-  else html += sec('jugement','Jugement', judgmentNatal(chart, extra.lieu, extra.dateUTC)+`<h4>Influences du moment</h4>`+judgmentTransits(chart, extra.now),'jugement');
+  else html += sec('jugement','Jugement', judgmentNatal(chart, extra.lieu, extra.dateUTC, extra.tz)+`<h4>Influences du moment</h4>`+judgmentTransits(chart, extra.now),'jugement');
   html += sec('glossaire','Glossaire', panelGlossary());
   return html;
 }
 function ficheItem(k,v){ return `<div class="fi"><span>${k}</span><b>${v}</b></div>`; }
 
 /* --------------------------- Format date ------------------------- */
-function fmtDate(d){ return new Intl.DateTimeFormat('fr-BE',{dateStyle:'long',timeZone:'Europe/Brussels'}).format(d); }
-function fmtTime(d){ return new Intl.DateTimeFormat('fr-BE',{hour:'2-digit',minute:'2-digit',timeZone:'Europe/Brussels'}).format(d); }
+function fmtDate(d,tz){ return new Intl.DateTimeFormat('fr-BE',{dateStyle:'long',timeZone:tz||'Europe/Brussels'}).format(d); }
+function fmtTime(d,tz){ return new Intl.DateTimeFormat('fr-BE',{hour:'2-digit',minute:'2-digit',timeZone:tz||'Europe/Brussels'}).format(d); }
 function fmtFull(d){ return new Intl.DateTimeFormat('fr-BE',{dateStyle:'full',timeStyle:'short',timeZone:'Europe/Brussels'}).format(d); }
-function bxlOffsetMin(d){ const p=new Intl.DateTimeFormat('en-US',{timeZone:'Europe/Brussels',hour12:false,year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'}).formatToParts(d).reduce((a,x)=>(a[x.type]=x.value,a),{});
-  const asUTC=Date.UTC(+p.year,+p.month-1,+p.day,+p.hour===24?0:+p.hour,+p.minute); return (asUTC-d.getTime())/60000; }
-function bxlWallToDate(y,mo,da,h,mi){ let g=new Date(Date.UTC(y,mo-1,da,h,mi)); g=new Date(g.getTime()-bxlOffsetMin(g)*60000);
-  g=new Date(Date.UTC(y,mo-1,da,h,mi)-bxlOffsetMin(g)*60000); return g; }
+// décalage (min) d'un fuseau IANA à un instant donné — gère l'heure d'été partout
+function tzOffsetMin(tz, d){
+  const p=new Intl.DateTimeFormat('en-US',{timeZone:tz,hour12:false,year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'}).formatToParts(d).reduce((a,x)=>(a[x.type]=x.value,a),{});
+  const asUTC=Date.UTC(+p.year,+p.month-1,+p.day,(+p.hour)%24,+p.minute); return (asUTC-d.getTime())/60000;
+}
+// heure murale d'un fuseau → instant UTC (point fixe à 2 passes pour les bascules DST)
+function wallToDate(tz, y,mo,da,h,mi){
+  let g=new Date(Date.UTC(y,mo-1,da,h,mi)); g=new Date(g.getTime()-tzOffsetMin(tz,g)*60000);
+  return new Date(Date.UTC(y,mo-1,da,h,mi)-tzOffsetMin(tz,g)*60000);
+}
+// thème « maintenant » minimal (7 longitudes) pour les transits — évite un buildChart complet
+function nowLite(){ const d=new Date(); return { date:d, planets: E.PLANETS.map(p=>({ key:p.key, nom:p.nom, g:p.g, lon:E.tropLon(p.body,d) })) }; }
 
 /* ----------------------------- État ------------------------------ */
-let cielSys='whole', natalSys='whole', cielFig='roue', natalFig='roue', lastCiel=null, lastNatal=null, lastHour=null;
+let cielSys='whole', natalSys='whole', cielFig='roue', natalFig='roue', lastCiel=null, lastNatal=null, lastHour=null, lastSig=null;
 
-function renderCiel(){
+function renderCiel(force){
   const now=new Date();
   const chart=E.buildChart(now, BXL.lat, BXL.lon, cielSys);
   const hour=E.planetaryHour(now, BXL.lat, BXL.lon);
   lastCiel=chart; lastHour=hour;
+  // horloge + figure rafraîchies à chaque tick (sans état cliquable)
   drawFigure(document.getElementById('fig-ciel'), chart, cielFig);
-  document.getElementById('sheet-ciel').innerHTML = buildSheet('ciel', chart, {hour});
   document.getElementById('dateline').textContent = fmtFull(now);
   document.getElementById('hourline').innerHTML = `Heure ${deP(hour.ruler)}<b>${hour.ruler.nom}</b> <span style="font-family:var(--glyph)">${hour.ruler.g}</span>`;
+  // feuille cliquable reconstruite seulement si la minute astrologique change (préserve scroll/navigation)
+  const sig = cielSys+'|'+hour.ruler.key+'|'+Math.floor(now.getTime()/60000);
+  if (force || sig!==lastSig){ lastSig=sig; const sy=window.scrollY;
+    document.getElementById('sheet-ciel').innerHTML = buildSheet('ciel', chart, {hour});
+    window.scrollTo(0, sy); }                                       // préserve la place de lecture au tick minute
   syncControls('ciel');
 }
 function renderNatal(){
   const y=document.getElementById('n-date').value, t=document.getElementById('n-heure').value||'12:00';
   const lieu=document.getElementById('n-lieu').value||'lieu inconnu';
   const lat=parseFloat(document.getElementById('n-lat').value), lon=parseFloat(document.getElementById('n-lon').value);
-  if(!y||isNaN(lat)||isNaN(lon))return;
-  const [Y,Mo,Da]=y.split('-').map(Number), [H,Mi]=t.split(':').map(Number);
-  const dateUTC=bxlWallToDate(Y,Mo,Da,H,Mi);
-  const chart=E.buildChart(dateUTC, lat, lon, natalSys);
-  const now=E.buildChart(new Date(), BXL.lat, BXL.lon, natalSys);
-  lastNatal=chart;
-  drawFigure(document.getElementById('fig-natal'), chart, natalFig);
-  document.getElementById('sheet-natal').innerHTML = buildSheet('natal', chart, {lieu, dateUTC, now});
-  syncControls('natal');
+  const tz=(document.getElementById('n-tz')||{}).value || 'Europe/Brussels';
+  const errBox=document.getElementById('n-err'); if(errBox) errBox.textContent='';
+  if(!y){ if(errBox) errBox.textContent='Indiquez une date de naissance.'; return; }
+  if(isNaN(lat)||lat<-90||lat>90||isNaN(lon)||lon<-180||lon>180){ if(errBox) errBox.textContent='Latitude (−90…90) et longitude (−180…180) requises.'; return; }
+  try{
+    const [Y,Mo,Da]=y.split('-').map(Number), [H,Mi]=t.split(':').map(Number);
+    const dateUTC=wallToDate(tz,Y,Mo,Da,H,Mi);
+    const chart=E.buildChart(dateUTC, lat, lon, natalSys);
+    lastNatal=chart;
+    drawFigure(document.getElementById('fig-natal'), chart, natalFig);
+    document.getElementById('sheet-natal').innerHTML = buildSheet('natal', chart, {lieu, dateUTC, tz, now:nowLite()});
+    syncControls('natal');
+  }catch(e){ console.error(e); if(errBox) errBox.textContent='Erreur de calcul : '+e.message; }
 }
 function syncControls(view){
   const sys=view==='ciel'?cielSys:natalSys, fig=view==='ciel'?cielFig:natalFig;
@@ -496,18 +525,29 @@ function setTab(which){ const ciel=which==='ciel';
 /* ------------------------ Bulles & liens ------------------------- */
 function initInteractivity(){
   const bulle=document.getElementById('bulle');
-  function move(e){ const t=e.target.closest('[data-bulle]'); if(!t){ bulle.hidden=true; return; }
+  const reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+  function showBulle(t, x, y){
     bulle.textContent=t.getAttribute('data-bulle'); bulle.hidden=false;
-    const pad=14; let x=e.clientX+pad, y=e.clientY+pad; const r=bulle.getBoundingClientRect();
-    if(x+r.width>innerWidth-8) x=e.clientX-r.width-pad; if(y+r.height>innerHeight-8) y=e.clientY-r.height-pad;
-    bulle.style.left=x+'px'; bulle.style.top=y+'px';
+    const pad=14, r=bulle.getBoundingClientRect();
+    let bx=x+pad, by=y+pad;
+    if(bx+r.width>innerWidth-8) bx=x-r.width-pad; if(by+r.height>innerHeight-8) by=y-r.height-pad;
+    bulle.style.left=Math.max(4,bx)+'px'; bulle.style.top=Math.max(4,by)+'px';
   }
-  document.addEventListener('mousemove',move);
-  document.addEventListener('click',e=>{ const t=e.target.closest('[data-goto]'); if(!t)return;
-    const el=document.getElementById(t.getAttribute('data-goto')); if(!el)return; e.preventDefault();
-    el.scrollIntoView({behavior:'smooth',block:'center'}); el.classList.remove('flash'); void el.offsetWidth; el.classList.add('flash');
-    bulle.hidden=true;
-  });
+  const hide=()=>{ bulle.hidden=true; };
+  function goto(t){ const el=document.getElementById(t.getAttribute('data-goto')); if(!el) return;
+    el.scrollIntoView({behavior:reduce?'auto':'smooth',block:'center'});
+    el.classList.remove('flash'); void el.offsetWidth; if(!reduce) el.classList.add('flash'); hide(); }
+  // souris : bulle suit le curseur
+  document.addEventListener('mousemove',e=>{ const t=e.target.closest('[data-bulle]'); if(t) showBulle(t,e.clientX,e.clientY); else hide(); });
+  // clavier : bulle sur l'élément focalisé
+  document.addEventListener('focusin',e=>{ const t=e.target.closest && e.target.closest('[data-bulle]');
+    if(t){ const b=t.getBoundingClientRect(); showBulle(t, b.left+b.width/2, b.bottom); } });
+  document.addEventListener('focusout',hide);
+  document.addEventListener('keydown',e=>{ if(e.key==='Escape'){ hide(); return; }
+    if(e.key==='Enter'||e.key===' '){ const t=e.target.closest && e.target.closest('[data-goto]'); if(t){ e.preventDefault(); goto(t); } } });
+  // clic / tactile : navigation interne, sinon afficher la bulle au tap (mobile)
+  document.addEventListener('click',e=>{ const g=e.target.closest('[data-goto]'); if(g){ e.preventDefault(); goto(g); return; }
+    const t=e.target.closest('[data-bulle]'); if(t){ const b=t.getBoundingClientRect(); showBulle(t, b.left+b.width/2, b.bottom); } else hide(); });
 }
 
 /* ----------------------------- Init ------------------------------ */

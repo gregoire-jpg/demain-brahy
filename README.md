@@ -19,7 +19,9 @@ Deux modes :
 
 - Sept astres : ☉ ☽ ☿ ♀ ♂ ♃ ♄ ; zodiaque **tropical**, positions **géocentriques vraies de la date**
 - **Dignités à cinq termes** : domicile, exaltation, triplicité (dorothéenne), **bornes égyptiennes**, **faces** (décans chaldéens) — avec score et **almutén** (du degré et de la géniture)
-- **Quatre systèmes de maisons** au choix : **signes entiers**, **Porphyre**, **Placide**, **Régiomontanus** (cuspides calculées et validées numériquement)
+- **Quatre systèmes de maisons** au choix : **signes entiers**, **Porphyre**, **Placide**, **Régiomontanus** (cuspides validées : I=Asc et X=MC à 0,00°, Placide vérifié par la condition semi-arc des anciens ; repli honnête sur signes entiers aux latitudes circumpolaires)
+- **Nativité partout dans le monde** : fuseau horaire du lieu au choix (heure d'été gérée par fuseau IANA), latitude/longitude libres
+- **Accessibilité** : navigation clavier, bulles au focus et au tactile, figures `role=img`, contrastes AA, respect de `prefers-reduced-motion`
 - **Aspects ptolémaïques** (orbes par moitiés), application / séparation, **partile**, **réceptions mutuelles**, aspectarium
 - **Secte** diurne / nocturne, **hayz** ; combustion, cazimi, sous les rayons ; rétrogradation ; oriental / occidental
 - **Tempérament humoral** (sanguin / colérique / mélancolique / flegmatique) calculé et chiffré
