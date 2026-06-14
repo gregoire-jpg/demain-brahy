@@ -42,6 +42,7 @@
   <nav class="onglets" role="tablist" aria-label="Sections">
     <button class="onglet" id="tab-ciel" role="tab" aria-selected="true" aria-controls="vue-ciel">Le ciel du moment</button>
     <button class="onglet" id="tab-natal" role="tab" aria-selected="false" aria-controls="vue-natal">Thème de nativité</button>
+    <button class="onglet" id="tab-apprendre" role="tab" aria-selected="false" aria-controls="vue-apprendre">Apprendre</button>
   </nav>
 
   <!-- ===================== CIEL DU MOMENT ===================== -->
@@ -147,6 +148,11 @@
     </div>
   </section>
 
+  <!-- ===================== APPRENDRE ===================== -->
+  <section class="panneau" id="vue-apprendre" role="tabpanel" aria-labelledby="tab-apprendre" hidden>
+    <div class="sheet" id="sheet-apprendre"></div>
+  </section>
+
   <footer class="pied">
     <p class="hommage">Dans la tradition de <b>Gustave-Lambert Brahy</b> (Liège 1894 — Bruxelles 1989), pionnier de l'astrologie mondiale et boursière, fondateur de l'Institut Astrologique de Belgique et de la revue <i>Demain</i> (1926).</p>
     <p>Calculs en temps réel, 100 % navigateur, sans serveur ni mouchard (éphéméride <i>Astronomy Engine</i> ; Ascendant validé par balayage d'horizon, cuspides de maisons par leurs conditions traditionnelles). — <a href="https://fr.wikipedia.org/wiki/Gustave_Lambert_Brahy" target="_blank" rel="noopener">Sur G.-L. Brahy</a></p>
@@ -157,6 +163,7 @@
 
 <script src="vendor/astronomy.browser.min.js"></script>
 <script src="engine.js"></script>
+<script src="cours.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

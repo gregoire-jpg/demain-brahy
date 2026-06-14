@@ -208,6 +208,27 @@ sup{ font-size:.66em; } small{ font-size:.82em; color:var(--muted); }
 .num{ font-family:var(--serif); font-size:11px; fill:var(--muted); cursor:pointer; } .sg{ font-family:var(--glyph); font-size:16px; fill:var(--accent); }
 .pl{ font-family:var(--glyph); font-size:19px; fill:var(--ink); cursor:pointer; } .pl.retro{ fill:var(--bleu); } .axe{ font-family:var(--serif); font-size:10px; fill:var(--gold); }
 
+/* ---------------- Apprendre : cours & encyclopédie ---------------- */
+.prog{ display:flex; align-items:center; gap:12px; margin:10px 0 20px; }
+.prog-bar{ flex:1; max-width:340px; height:10px; background:var(--surface3); border:1px solid var(--line); border-radius:6px; overflow:hidden; }
+.prog-bar i{ display:block; height:100%; background:var(--accent); }
+.prog span{ font-size:.84rem; color:var(--ink2); }
+.lecon{ border:1px solid var(--line); border-radius:var(--r); background:var(--surface); margin:8px 0; box-shadow:var(--shadow); }
+.lecon>summary{ cursor:pointer; padding:11px 16px; font-family:var(--display); font-size:1.14rem; font-weight:600; color:var(--ink); list-style:none; }
+.lecon>summary::-webkit-details-marker{ display:none; } .lecon>summary::marker{ content:''; }
+.lecon[open]>summary{ color:var(--accent); border-bottom:1px solid var(--line); }
+.lec-check{ display:inline-block; width:1.4em; color:var(--gold); } .lecon[open] .lec-check{ color:var(--vert); }
+.lec-body{ padding:8px 18px 16px; } .lec-body p{ max-width:74ch; }
+a.lex{ color:var(--accent); border-bottom:1px dotted var(--accent); cursor:pointer; } a.lex:hover{ background:rgba(124,43,34,.08); }
+.see{ font-family:var(--serif); font-size:.86rem; background:var(--surface3); color:var(--accent); border:1px solid var(--line); border-radius:var(--r); padding:5px 12px; margin:8px 6px 2px 0; cursor:pointer; }
+.see:hover{ background:var(--accent); color:#fbf6ea; border-color:var(--accent); }
+.lex-search{ width:100%; max-width:420px; font-family:var(--serif); font-size:1rem; background:#fffdf6; border:1px solid var(--line); border-radius:var(--r); padding:9px 12px; margin:4px 0 18px; }
+.lex-search:focus{ outline:none; border-color:var(--accent); box-shadow:0 0 0 3px rgba(124,43,34,.12); }
+.lex-entry{ border-bottom:1px solid var(--line2); padding:10px 0; scroll-margin-top:12px; max-width:78ch; }
+.lex-t{ font-family:var(--display); font-size:1.14rem; color:var(--ink); }
+.lex-cat{ font-size:.62rem; text-transform:uppercase; letter-spacing:.1em; color:var(--muted); margin-left:8px; }
+.lex-def{ margin-top:3px; }
+
 /* ---------------- Pied ---------------- */
 .pied{ margin-top:52px; border-top:1px solid var(--line); padding-top:18px; font-size:.8rem; color:var(--muted); }
 .pied .hommage{ font-style:italic; } .pied a{ color:var(--accent); }

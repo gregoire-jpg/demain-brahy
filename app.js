@@ -685,11 +685,44 @@ function syncControls(view){
 }
 
 /* --------------------------- Onglets ----------------------------- */
-function setTab(which){ const ciel=which==='ciel';
-  document.getElementById('tab-ciel').setAttribute('aria-selected',ciel);
-  document.getElementById('tab-natal').setAttribute('aria-selected',!ciel);
-  document.getElementById('vue-ciel').hidden=!ciel; document.getElementById('vue-natal').hidden=ciel;
-  if(history.replaceState) history.replaceState(null,'',ciel?'#':'#natal');
+let apprRendered=false;
+function setTab(which){
+  ['ciel','natal','apprendre'].forEach(v=>{ const t=document.getElementById('tab-'+v), s=document.getElementById('vue-'+v);
+    if(t) t.setAttribute('aria-selected', String(v===which)); if(s) s.hidden=(v!==which); });
+  if(which==='apprendre' && !apprRendered){ try{ renderApprendre(); }catch(e){ console.error(e); } apprRendered=true; }
+  if(history.replaceState) history.replaceState(null,'', which==='ciel'?'#':'#'+which);
+  scrollTo(0,0);
+}
+
+/* --------------------------- Apprendre --------------------------- */
+function renderApprendre(){
+  const C=window.DEMAIN_COURS; if(!C){ document.getElementById('sheet-apprendre').innerHTML='<p>Contenu pédagogique indisponible.</p>'; return; }
+  const PKEY='demain_progress';
+  const prog=()=>{ try{ return JSON.parse(localStorage.getItem(PKEY)||'{}'); }catch(e){ return {}; } };
+  const allLec=C.cours.reduce((a,n)=>a.concat(n.lecons),[]), nTot=allLec.length;
+  function bar(){ const d=prog(), n=allLec.filter(l=>d[l.id]).length;
+    return `<div class="prog"><div class="prog-bar"><i style="width:${Math.round(n/nTot*100)}%"></i></div><span>${n}/${nTot} leçons lues</span></div>`; }
+  let parcours=`<p class="chapeau">Un cours d'astrologie traditionnelle, des premières notions jusqu'aux techniques savantes. Dépliez une leçon pour la lire ; votre progression est mémorisée dans votre navigateur. Les mots <a class="lex" data-lex="theme">soulignés</a> renvoient à l'encyclopédie.</p><div id="prog-box">${bar()}</div>`;
+  const d0=prog();
+  C.cours.forEach(n=>{ parcours+=`<h4>${esc(n.titre)}</h4>`;
+    n.lecons.forEach(l=>{ parcours+=`<details class="lecon" data-lec="${l.id}"><summary><span class="lec-check">${d0[l.id]?'✓':'○'}</span> ${esc(l.titre)}</summary><div class="lec-body">${l.html}</div></details>`; }); });
+  const cats=[]; C.lexique.forEach(e=>{ if(!cats.includes(e.cat)) cats.push(e.cat); });
+  let lex=`<p class="chapeau">Toutes les notions, classées et reliées. Cherchez un terme, ou cliquez les mots soulignés du cours.</p><input type="search" id="lex-search" class="lex-search" placeholder="Rechercher un terme…" aria-label="Rechercher dans l'encyclopédie">`;
+  cats.forEach(cat=>{ lex+=`<h4 class="lex-cat-h" data-cat="${esc(cat)}">${esc(cat)}</h4>`;
+    C.lexique.filter(e=>e.cat===cat).forEach(e=>{ lex+=`<div class="lex-entry" id="lex-${e.key}" data-terme="${esc((e.terme+' '+e.def.replace(/<[^>]+>/g,'')).toLowerCase())}"><b class="lex-t">${esc(e.terme)}</b> <span class="lex-cat">${esc(e.cat)}</span><div class="lex-def">${e.def}</div></div>`; }); });
+  const tabs=[['parcours','Parcours',parcours],['lexique','Encyclopédie',lex]];
+  const nav=`<div class="subnav" role="tablist" aria-label="Apprendre">`+tabs.map((t,i)=>`<button class="subtab" type="button" data-sub="appr-${t[0]}" aria-selected="${i===0}">${t[1]}</button>`).join('')+`</div>`;
+  const panels=`<div class="subpanels">`+tabs.map((t,i)=>`<section class="subpanel" id="appr-${t[0]}" data-sub="appr-${t[0]}"${i?' hidden':''}>${t[2]}</section>`).join('')+`</div>`;
+  const sheet=document.getElementById('sheet-apprendre'); sheet.innerHTML=nav+panels;
+  // progression : marquer lu à l'ouverture d'une leçon
+  sheet.querySelectorAll('.lecon').forEach(det=>det.addEventListener('toggle',()=>{ if(!det.open) return;
+    const id=det.dataset.lec, p=prog(); if(!p[id]){ p[id]=true; localStorage.setItem(PKEY,JSON.stringify(p));
+      det.querySelector('.lec-check').textContent='✓'; const pb=document.getElementById('prog-box'); if(pb) pb.innerHTML=bar(); } }));
+  // recherche encyclopédie
+  const srch=document.getElementById('lex-search');
+  if(srch) srch.addEventListener('input',()=>{ const q=srch.value.trim().toLowerCase();
+    sheet.querySelectorAll('.lex-entry').forEach(en=>{ en.style.display = (!q||en.dataset.terme.includes(q))?'':'none'; });
+    sheet.querySelectorAll('.lex-cat-h').forEach(h=>{ let nx=h.nextElementSibling, vis=false; while(nx&&!nx.classList.contains('lex-cat-h')){ if(nx.classList.contains('lex-entry')&&nx.style.display!=='none') vis=true; nx=nx.nextElementSibling; } h.style.display=vis?'':'none'; }); });
 }
 
 /* ------------------------ Bulles & liens ------------------------- */
@@ -722,6 +755,12 @@ function initInteractivity(){
   // clic / tactile : navigation interne, sinon afficher la bulle au tap (mobile)
   document.addEventListener('click',e=>{ const g=e.target.closest('[data-goto]'); if(g){ e.preventDefault(); goto(g); return; }
     const t=e.target.closest('[data-bulle]'); if(t){ const b=t.getBoundingClientRect(); showBulle(t, b.left+b.width/2, b.bottom); } else hide(); });
+  const flash=el=>{ if(!el)return; el.scrollIntoView({behavior:reduce?'auto':'smooth',block:'center'}); el.classList.remove('flash'); void el.offsetWidth; if(!reduce) el.classList.add('flash'); };
+  // liens encyclopédie + boutons « voir dans votre thème »
+  document.addEventListener('click',e=>{
+    const lx=e.target.closest('[data-lex]'); if(lx){ e.preventDefault(); setTab('apprendre'); const sh=document.getElementById('sheet-apprendre'); if(sh){ activateSub(sh,'appr-lexique'); flash(document.getElementById('lex-'+lx.dataset.lex)); } return; }
+    const sv=e.target.closest('[data-see]'); if(sv){ e.preventDefault(); const sub=sv.dataset.see; setTab('natal'); const sh=document.getElementById('sheet-natal'); if(sh){ activateSub(sh,sub); const el=document.getElementById(sub); if(el) el.scrollIntoView({behavior:reduce?'auto':'smooth',block:'start'}); } }
+  });
 }
 
 /* -------------- Atlas, bibliothèque, export ---------------------- */
@@ -776,6 +815,7 @@ function initExtras(){
 function init(){
   document.getElementById('tab-ciel').addEventListener('click',()=>setTab('ciel'));
   document.getElementById('tab-natal').addEventListener('click',()=>setTab('natal'));
+  const ta=document.getElementById('tab-apprendre'); if(ta) ta.addEventListener('click',()=>setTab('apprendre'));
   document.getElementById('form-natal').addEventListener('submit',e=>{e.preventDefault(); renderNatal();});
   document.querySelectorAll('.figbtn').forEach(b=>b.addEventListener('click',()=>{ const v=b.closest('.panneau').id.replace('vue-','');
     if(v==='ciel'){cielFig=b.dataset.mode; if(lastCiel)drawFigure(document.getElementById('fig-ciel'),lastCiel,cielFig);}
@@ -786,7 +826,7 @@ function init(){
   initExtras();
   try{ renderCiel(); }catch(e){ console.error(e); document.getElementById('sheet-ciel').innerHTML='<p>Erreur : '+esc(e.message)+'</p>'; }
   try{ renderNatal(); }catch(e){ console.error(e); }
-  if(location.hash==='#natal') setTab('natal');
+  if(location.hash==='#natal') setTab('natal'); else if(location.hash==='#apprendre') setTab('apprendre');
   setInterval(()=>{ if(!document.getElementById('vue-ciel').hidden) try{ renderCiel(); }catch(e){} }, 60000);
 }
 if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',init); else init();
