@@ -324,19 +324,35 @@ function panelPlanets(chart){
 }
 
 function panelLots(chart){
-  let r=`<table class="grid"><caption>Lots & nœuds</caption><tr><th>Point</th><th>Position</th><th>Maison</th><th>Sens</th></tr>`;
+  let r=`<table class="grid"><caption>Lots herméniques & nœuds</caption><tr><th>Point</th><th>Position</th><th>Maison</th><th>Sens</th></tr>`;
   chart.points.forEach(pt=>{ const f=fmtLon(pt.lon);
     r+=`<tr><td><span class="g">${pt.g}</span> ${pt.nom}</td><td class="pos">${f.deg}°${String(f.min).padStart(2,'0')}′ <span class="g">${f.signG}</span></td><td>${ROMAN[pt.house]}</td><td class="sens">${esc((POINT_DEF[pt.key]||'').split('—').slice(1).join('—').trim())}</td></tr>`; });
   r+=`</table>`;
-  return r;
+  // Lots traditionnels supplémentaires (formules transparentes)
+  const ml=E.moreLots(chart);
+  r+=`<table class="grid" style="margin-top:10px"><caption>Lots traditionnels</caption><tr><th>Lot</th><th>Position</th><th>Maison</th><th>Formule</th></tr>`;
+  ml.forEach(l=>{ const f=fmtLon(l.lon), h=((f.sign-chart.ascSign)%12+12)%12+1;
+    r+=`<tr><td><span class="g">${l.g}</span> ${l.nom}</td><td class="pos">${f.deg}°${String(f.min).padStart(2,'0')}′ <span class="g">${f.signG}</span></td><td>${ROMAN[h]}</td><td class="sm">${l.formule}</td></tr>`; });
+  return r+`</table>`;
 }
 
 function panelStars(chart){
-  if(!chart.stars.length) return `<p class="vide">Aucune étoile fixe majeure n'est conjointe (orbe 1,5°) à un astre ou à un angle en ce moment.</p>`;
-  let r=`<ul class="liste">`;
-  chart.stars.forEach(s=> r+=`<li><b>★ ${s.star.nom}</b> <small>(${s.star.nat}, ${s.star.note})</small> — conjointe à <b>${s.body.nom}</b>, orbe ${s.orb.toFixed(2)}°.</li>`);
-  return r+`</ul>`;
+  let r='';
+  if(!chart.stars.length) r+=`<p class="vide">Aucune étoile fixe majeure conjointe (orbe 1,5°) à un astre ou à un angle.</p>`;
+  else { r+=`<h4>Conjonctions zodiacales</h4><ul class="liste">`;
+    chart.stars.forEach(s=> r+=`<li><b>★ ${s.star.nom}</b> <small>(${s.star.nat}, ${s.star.note})</small> — conjointe à <b>${s.body.nom}</b>, orbe ${s.orb.toFixed(2)}°.</li>`);
+    r+=`</ul>`; }
+  // Parans (méthode Brady) — uniquement pour un thème avec lieu (natal)
+  if(chart.lat!=null){ const pa=E.parans(chart, 1.5);
+    r+=`<h4>Parans <small>· co-angularité au lieu et au jour (Brady, v1)</small></h4>`;
+    if(!pa.length) r+=`<p class="vide">Aucun paran serré (orbe 1,5°).</p>`;
+    else { r+=`<ul class="liste">`; pa.slice(0,12).forEach(p=>r+=`<li><span class="g">${p.planet.g}</span> <b>${p.planet.nom}</b> (${ANGLE_FR[p.angleP]}) ✶ <b>${p.star.nom}</b> (${ANGLE_FR[p.angleS]}) <span class="sm">orbe ${p.orb.toFixed(2)}°</span></li>`); r+=`</ul>`;
+      r+=`<p class="sm">Le paran relie une planète et une étoile touchant chacune un angle (Orient, Couchant, Milieu du Ciel, Fond du Ciel) — l'usage le plus ancien des étoiles. Positions de l'instant natal.</p>`; } }
+  // Demeure lunaire
+  r+=`<h4>Demeure lunaire</h4><p>${chart.mansion.index+1}<sup>e</sup> demeure — <i>${chart.mansion.nom}</i> (sur 28).</p>`;
+  return r;
 }
+const ANGLE_FR={ ASC:'Orient', DESC:'Couchant', MC:'Milieu du Ciel', IC:'Fond du Ciel' };
 
 function panelTemperament(chart){
   const t=chart.temperament;
@@ -469,61 +485,144 @@ function panelPrevisions(chart, extra){
   fd.timeline.forEach(p=>{ const w=(p.end-p.start)/75*100, cur=(p.lord===fd.major.lord&&p.start===fd.major.start);
     r+=`<span class="fseg${cur?' cur':''}" style="width:${w}%" data-bulle="${esc(firNom(p.lord)+' : '+Math.round(p.start)+'–'+Math.round(p.end)+' ans')}"><span class="g">${firG(p.lord)}</span></span>`; });
   r+=`</div>`;
-  // Révolution solaire
+  // Libération zodiacale (depuis Fortune et Esprit)
+  r+=`<h4>Libération zodiacale <small>· aphesis de Valens, depuis les Lots</small></h4>`;
+  [['fortune','Fortune'],['spirit','Esprit']].forEach(([lk,ln])=>{
+    const lot=chart.lots.find(l=>l.key===lk); const zr=E.zodiacalReleasing(lot.lon, birth, at);
+    const cy=d=>fmtDate(zr.toDate(d)); const lvl=(c,n)=>`${SIGNS[c.sign].nom}${zr.peak(c.sign)?' <span class="asp-h">[pic]</span>':''} <span class="sm">(${cy(c.start)} → ${cy(c.end)})</span>`;
+    r+=`<p>Depuis le Lot ${art2lot(ln)} (${SIGNS[zr.startSign].nom}) : niveau 1 ${lvl(zr.cur.L1)} ; niveau 2 ${lvl(zr.cur.L2)} ; niveau 3 ${lvl(zr.cur.L3)}.${zr.cur.L1.lb?' <b>Dénouement du lien</b> (loosing of the bond) en cours.':''}</p>`;
+  });
+  // Décennies
+  const de=E.decennials(birth, at, chart.day);
+  r+=`<h4>Décennies <small>· périodes de Valens (10 ans 9 mois)</small></h4>`;
+  r+=`<p>Maître majeur : <b>${PMAP[de.major.lord].nom}</b> (${fmtDate(de.toDate(de.major.start))} → ${fmtDate(de.toDate(de.major.end))}), sous-maître <b>${PMAP[de.minor.lord].nom}</b>.</p>`;
+  // Distributions par les bornes
+  const di=E.distributions(chart, at, birth);
+  if(di.current){ r+=`<h4>Distribution par les bornes <small>· direction de l'Ascendant (Naibod)</small></h4>`;
+    r+=`<p>Distributeur en cours : <b>${PMAP[di.current.distributor].nom}</b> (maître de la borne où parvient l'Ascendant dirigé), jusque vers ${(at.getUTCFullYear()+ (di.current.untilYears - di.age)).toFixed(0)}.</p>`; }
+  // Révolution solaire + lunaire
   const sr=E.solarReturn(sunLon, at, extra.lat, extra.lon);
   if(sr){ const fa=fmtLon(sr.chart.asc), fm=fmtLon(sr.chart.mc), srMoon=sr.chart.planets.find(p=>p.key==='moon');
-    r+=`<h4>Révolution solaire <small>· carte de l'année en cours</small></h4>`;
-    r+=`<p>Retour du Soleil à son degré natal le <b>${fmtDate(sr.date)}</b>. Ascendant de l'année : <b>${fa.deg}° ${fa.signNom}</b> — Milieu du Ciel <b>${fm.deg}° ${fm.signNom}</b>. Lune de l'année en ${fmtLon(srMoon.lon).deg}° ${SIGNS[srMoon.sign].nom}. `;
-    r+=`Thème ${sr.chart.day?'diurne':'nocturne'} ; l'angle ascendant de la révolution colore l'orientation de l'année.</p>`;
-  }
-  // Transits à venir
-  const tr=E.transitsForecast(chart, at, 12);
-  r+=`<h4>Transits à venir <small>· lentes (Mars, Jupiter, Saturne) sur 12 mois</small></h4>`;
-  if(!tr.length) r+=`<p class="vide">Aucun transit majeur des lentes au thème dans les 12 mois.</p>`;
+    r+=`<h4>Révolution solaire <small>· carte de l'année</small></h4>`;
+    r+=`<p>Retour du Soleil le <b>${fmtDate(sr.date)}</b> : Ascendant de l'année <b>${fa.deg}° ${fa.signNom}</b>, MC <b>${fm.deg}° ${fm.signNom}</b>, Lune en ${fmtLon(srMoon.lon).deg}° ${SIGNS[srMoon.sign].nom}. Thème ${sr.chart.day?'diurne':'nocturne'}.</p>`; }
+  const moonNatal=chart.planets.find(p=>p.key==='moon').lon;
+  const lr=E.lunarReturn(moonNatal, at, extra.lat, extra.lon);
+  if(lr){ const la=fmtLon(lr.chart.asc); r+=`<h4>Révolution lunaire <small>· cadre du mois</small></h4>`;
+    r+=`<p>Dernier retour de la Lune le <b>${fmtDate(lr.date)}</b> à ${fmtTime(lr.date,extra.tz)} : Ascendant lunaire <b>${la.deg}° ${la.signNom}</b>.</p>`; }
+  // Directions primaires (v1)
+  const pd=E.primaryDirections(chart).filter(d=>d.years>=0 && d.years<=95).slice(0,12);
+  if(pd.length){ r+=`<h4>Directions primaires <small>· clé de Naibod, aux angles (v1 « in zodiaco »)</small></h4><ul class="liste">`;
+    pd.forEach(d=>{ const yr=birth.getUTCFullYear()+Math.round(d.years); const cl=d.asp.fam==='harmon'?'asp-h':d.asp.fam==='tendu'?'asp-t':'asp-n';
+      r+=`<li><span class="tdate">${Math.round(d.years)} ans (~${yr})</span> — <span class="g">${d.prom.g} ${d.asp.g}</span> <b>${d.prom.nom}</b> ${d.asp.nom} <b>${d.sig}</b></li>`; });
+    r+=`</ul>`; }
+  // Fenêtres de transit (entrée/exact/sortie)
+  const tw=E.transitWindows(chart, at, 12);
+  r+=`<h4>Fenêtres de transit <small>· lentes sur 12 mois (entrée → sortie)</small></h4>`;
+  if(!tw.length) r+=`<p class="vide">Aucune fenêtre de transit majeure des lentes dans les 12 mois.</p>`;
+  else { r+=`<ul class="liste">`; tw.slice(0,16).forEach(w=>{ const cl=w.asp.fam==='harmon'?'asp-h':w.asp.fam==='tendu'?'asp-t':'asp-n';
+    r+=`<li><span class="tdate">${fmtDate(w.enter)} → ${fmtDate(w.exit)}</span> — <span class="g">${w.mover.g} ${w.asp.g}</span> <b>${w.mover.nom}</b> ${w.asp.nom} <b>${w.target.nom}</b> <span class="${cl}">(${w.exacts.length} exact${w.exacts.length>1?'s — triple passage':''})</span></li>`; });
+    r+=`</ul>`; if(tw.length>16) r+=`<p class="sm">… et ${tw.length-16} autre(s).</p>`; }
+  return r;
+}
+function art2lot(n){ return /^[AEÉIOUH]/i.test(n)?"de l'"+n:'de '+n; }
+
+function panelAvance(chart){
+  let r='';
+  // Hyleg & Alcocoden
+  const hy=E.hyleg(chart);
+  r+=`<h4>Hyleg & Alcocoden <small>· témoignage de vitalité (jamais une durée de vie)</small></h4>`;
+  r+=`<p>Donneur de vie (hyleg) : <b>${hy.source}</b>. Maître du degré (alcocoden) : <b>${PMAP[hy.alcocoden].nom}</b>, en condition <b>${hy.condition}</b> — soit <b>${hy.years}</b> années planétaires symboliques. <span class="sm">À lire comme une mesure traditionnelle de robustesse vitale, non comme une prédiction.</span></p>`;
+  // Nœud vrai
+  const tn=E.trueNode(chart.date), mn=chart.points.find(p=>p.key==='nodeN').lon;
+  r+=`<h4>Nœud lunaire vrai <small>· osculateur, vs moyen</small></h4>`;
+  r+=`<p>Tête du Dragon (vraie) : <b>${fmtLon(tn).txt}</b> ; nœud moyen : ${fmtLon(mn).txt} (écart ${sep(tn,mn).toFixed(2)}°).</p>`;
+  // Antiscia
+  const ac=E.antisciaContacts(chart,1.5);
+  r+=`<h4>Antiscia & contre-antiscia <small>· contacts cachés (axes solsticial / équinoxial)</small></h4>`;
+  if(!ac.antiscia.length && !ac.contra.length) r+=`<p class="vide">Aucun contact d'antiscion serré (orbe 1,5°).</p>`;
   else { r+=`<ul class="liste">`;
-    tr.slice(0,18).forEach(t=>{ const cl=t.asp.fam==='harmon'?'asp-h':t.asp.fam==='tendu'?'asp-t':'asp-n';
-      r+=`<li><span class="tdate">${fmtDate(t.when)}</span> — <span class="g">${t.mover.g} ${t.asp.g}</span> <b>${t.mover.nom}</b> ${t.asp.nom} <b>${t.target.nom}</b> natal <span class="${cl}">(${t.asp.nom})</span></li>`; });
-    r+=`</ul>`; if(tr.length>18) r+=`<p class="sm">… et ${tr.length-18} autre(s) sur la période.</p>`; }
+    ac.antiscia.forEach(x=>r+=`<li><span class="g">${x.a.g}</span> <b>${x.a.nom}</b> sur l'antiscion de <span class="g">${x.b.g}</span> <b>${x.b.nom}</b> <span class="sm">(orbe ${x.orb.toFixed(1)}°)</span></li>`);
+    ac.contra.forEach(x=>r+=`<li><span class="g">${x.a.g}</span> <b>${x.a.nom}</b> sur le contre-antiscion de <span class="g">${x.b.g}</span> <b>${x.b.nom}</b> <span class="sm asp-t">(orbe ${x.orb.toFixed(1)}°)</span></li>`);
+    r+=`</ul>`; }
+  // Déclinaisons
+  const dc=E.declinations(chart);
+  r+=`<h4>Déclinaisons & parallèles <small>· hors de l'écliptique</small></h4>`;
+  r+=`<table class="grid"><tr><th>Astre</th><th>Déclinaison</th><th></th></tr>`;
+  dc.rows.forEach(row=>r+=`<tr><td><span class="g">${row.g}</span> ${row.nom}</td><td class="num2">${row.dec.toFixed(2)}°</td><td>${row.oob?'<span class="asp-t">hors-limites</span>':''}</td></tr>`);
+  r+=`</table>`;
+  if(dc.aspects.length){ r+=`<ul class="liste">`; dc.aspects.forEach(a=>r+=`<li><span class="g">${a.a.g} ${a.b.g}</span> <b>${a.a.nom}</b> ${a.type} <b>${a.b.nom}</b> <span class="${a.type==='parallèle'?'asp-h':'asp-t'}">(orbe ${a.orb.toFixed(2)}°)</span></li>`); r+=`</ul>`; }
+  // Monomoiria / douzième-partie
+  r+=`<h4>Gouvernance par degré <small>· monomoiria & douzième-partie</small></h4><table class="grid"><tr><th>Astre</th><th>Maître du degré</th><th>Douzième-partie</th></tr>`;
+  chart.planets.forEach(p=>{ const mo=E.monomoiria(p.lon), dd=E.dodecatemoria(p.lon);
+    r+=`<tr><td><span class="g">${p.g}</span> ${p.nom}</td><td><span class="g">${PMAP[mo].g}</span> ${PMAP[mo].nom}</td><td>${fmtLon(dd).deg}° <span class="g">${fmtLon(dd).signG}</span></td></tr>`; });
+  r+=`</table>`;
   return r;
 }
 
-/* ----------------------- assemblage du cockpit ------------------- */
-const SECTIONS_CIEL = [['positions','Positions'],['aspects','Aspects'],['config','Configurations'],['analyse','Dominantes'],['maisons','Maisons'],['astres','Les sept astres'],['lots','Lots & nœuds'],['etoiles','Étoiles fixes'],['temperament','Climat'],['dignites','Dignités'],['jugement','Bulletin'],['glossaire','Glossaire']];
-const SECTIONS_NATAL = [['positions','Positions'],['aspects','Aspects'],['config','Configurations'],['analyse','Dominantes'],['maisons','Maisons'],['astres','Astres'],['lots','Lots & nœuds'],['etoiles','Étoiles'],['temperament','Tempérament'],['previsions','Prévisions'],['dignites','Dignités'],['jugement','Jugement'],['glossaire','Glossaire']];
+/* ------------------------- Portrait (clair) ---------------------- */
+function panelPortrait(chart, extra){
+  const sun=chart.planets.find(p=>p.key==='sun'), moon=chart.planets.find(p=>p.key==='moon');
+  const ascSign=chart.ascSign, ascRuler=chart.planets.find(p=>p.key===SIGNS[ascSign].dom);
+  const t=chart.temperament, dom=E.dominants(chart)[0], cfg=E.configurations(chart), fa=fmtLon(chart.asc);
+  let r=`<p class="chapeau">En un coup d'œil — l'essentiel de votre thème, en clair. Les autres onglets en déploient toute la mécanique traditionnelle.</p>`;
+  r+=`<h4>Votre Ascendant — ${SIGNS[ascSign].nom}</h4><p>L'Ascendant est la porte par laquelle vous abordez le monde et la façon dont on vous perçoit. Le vôtre, <b>${SIGNS[ascSign].nom}</b> (${fa.deg}°), vous porte ${SIGN_KW[ascSign].man}. Son maître, ${leP(ascRuler)}<b>${ascRuler.nom}</b> en ${SIGNS[ascRuler.sign].nom} (maison ${ROMAN[ascRuler.house]}), montre où se joue surtout la conduite de votre vie : ${HOUSE_MEAN[ascRuler.house].dom}.</p>`;
+  r+=`<h4>Votre Soleil — ${SIGNS[sun.sign].nom}, maison ${ROMAN[sun.house]}</h4><p>Le Soleil, c'est votre élan vital, votre identité profonde et ce vers quoi vous tendez. En ${SIGNS[sun.sign].nom} il s'exprime ${SIGN_KW[sun.sign].man} ; en ${ROMAN[sun.house]}<sup>e</sup> maison il rayonne surtout sur ${HOUSE_MEAN[sun.house].dom}.</p>`;
+  r+=`<h4>Votre Lune — ${SIGNS[moon.sign].nom}, maison ${ROMAN[moon.house]}</h4><p>La Lune gouverne vos émotions, vos besoins et vos habitudes. En ${SIGNS[moon.sign].nom}, votre vie intérieure fonctionne ${SIGN_KW[moon.sign].man} ; en ${ROMAN[moon.house]}<sup>e</sup> maison elle se nourrit de ${HOUSE_MEAN[moon.house].dom}.</p>`;
+  r+=`<h4>Votre tempérament — ${TEMPER[t.dominant].nom}</h4><p>Selon la médecine des humeurs, votre complexion dominante est <b>${TEMPER[t.dominant].nom.toLowerCase()}</b> (${TEMPER[t.dominant].q}), teintée de ${TEMPER[t.second].nom.toLowerCase()} : ${TEMPER[t.dominant].t}.</p>`;
+  r+=`<h4>L'astre qui vous mène — ${dom.nom}</h4><p>${dom.nom} est l'astre le plus actif de votre thème (${dom.pct}% de l'activité) : ${PLANET_KW[dom.key].suj.toLowerCase()} y tiennent une place de premier plan. Votre thème est <b>${chart.day?'diurne':'nocturne'}</b>, sous l'autorité ${chart.day?'du Soleil':'de la Lune'}.</p>`;
+  if(cfg.length) r+=`<h4>Une figure marquante</h4><p>Votre thème porte ${cfg.length>1?'plusieurs figures remarquables':'une figure remarquable'} : ${cfg.map(x=>x.type.toLowerCase()).join(', ')} — détail dans l'onglet <b>Aspects</b>.</p>`;
+  r+=`<p class="sm">Ce portrait est volontairement accessible. Tout le détail — dignités, almutén, maisons, lots, étoiles, prévisions traditionnelles — vit dans les onglets.</p>`;
+  return r;
+}
 
+/* ----------------------- assemblage en onglets ------------------- */
 function buildSheet(view, chart, extra){
   const isCiel = view==='ciel';
-  const secs = isCiel?SECTIONS_CIEL:SECTIONS_NATAL;
-  const nav = `<nav class="toc" aria-label="Sommaire du thème">`+secs.map(s=>`<a class="lien" href="#${view}-sec-${s[0]}" data-goto="${view}-sec-${s[0]}">${s[1]}</a>`).join('')+`</nav>`;
-  const sec=(id,titre,inner,cls)=>`<section class="bloc ${cls||''}" id="${view}-sec-${id}"><h3>${titre}</h3>${inner}</section>`;
-  let html = nav;
-  // résumé compact (fiche)
-  const sun=chart.planets.find(p=>p.key==='sun');
-  html += `<div class="fiche">`
-    + ficheItem('Ascendant', `${fmtLon(chart.asc).deg}° ${SIGNS[fmtLon(chart.asc).sign].nom}`)
-    + ficheItem('Milieu du Ciel', `${fmtLon(chart.mc).deg}° ${SIGNS[fmtLon(chart.mc).sign].nom}`)
+  const tabs = isCiel ? [
+    ['bulletin','Bulletin', judgmentCiel(chart, extra.hour)],
+    ['positions','Positions', panelPositions(chart)],
+    ['aspects','Aspects', panelAspectarian(chart)+panelConfigurations(chart)],
+    ['maisons','Maisons', panelHouses(chart)],
+    ['astres','Astres', panelPlanets(chart)],
+    ['forces','Dignités & forces', panelDignities(chart)+panelDominants(chart)],
+    ['lots','Lots & étoiles', panelLots(chart)+panelStars(chart)],
+    ['climat','Climat', panelTemperament(chart)+panelMoon(chart)],
+    ['glossaire','Glossaire', panelGlossary()],
+  ] : [
+    ['portrait','Portrait', panelPortrait(chart, extra)],
+    ['positions','Positions', panelPositions(chart)],
+    ['aspects','Aspects', panelAspectarian(chart)+panelConfigurations(chart)],
+    ['maisons','Maisons', panelHouses(chart)],
+    ['astres','Astres', panelPlanets(chart)],
+    ['forces','Dignités & forces', panelDignities(chart)+panelDominants(chart)+panelTemperament(chart)],
+    ['lots','Lots & points', panelLots(chart)],
+    ['etoiles','Étoiles & demeures', panelStars(chart)],
+    ['previsions','Prévisions', panelPrevisions(chart, extra)],
+    ['avance','Avancé', panelAvance(chart)],
+    ['jugement','Jugement', judgmentNatal(chart, extra.lieu, extra.dateUTC, extra.tz)+`<h4>Influences du moment</h4>`+judgmentTransits(chart, extra.now)],
+    ['glossaire','Glossaire', panelGlossary()],
+  ];
+  const fa=fmtLon(chart.asc), fm=fmtLon(chart.mc);
+  const fiche = `<div class="fiche">`
+    + ficheItem('Ascendant', `${fa.deg}° ${fa.signNom}`)
+    + ficheItem('Milieu du Ciel', `${fm.deg}° ${fm.signNom}`)
     + ficheItem('Secte', chart.day?'Diurne ☀':'Nocturne ☾')
     + ficheItem('Almutén', PMAP[chart.almuten.planet].nom)
     + ficheItem('Complexion', TEMPER[chart.temperament.dominant].nom)
     + ficheItem('Lune', `${chart.phase.nom} ${chart.phase.illum}%`)
     + `</div>`;
-  html += sec('positions','Positions & dignités', panelPositions(chart));
-  html += sec('aspects','Aspects & réceptions', panelAspectarian(chart));
-  html += sec('config','Configurations d\'aspects', panelConfigurations(chart));
-  html += sec('analyse','Dominantes & balances', panelDominants(chart));
-  html += sec('maisons', isCiel?'Les maisons':'Les douze maisons — interprétation', panelHouses(chart));
-  html += sec('astres','Les sept astres — délinéation', panelPlanets(chart));
-  html += sec('lots','Lots & nœuds', panelLots(chart));
-  html += sec('etoiles','Étoiles fixes', panelStars(chart));
-  html += sec('temperament', isCiel?'Climat & tempérament du moment':'Tempérament & complexion', panelTemperament(chart)+(isCiel?panelMoon(chart):''));
-  if(!isCiel) html += sec('previsions','Prévisions — profections, firdaria, révolution solaire, transits', panelPrevisions(chart, extra),'jugement');
-  html += sec('dignites','Table des dignités essentielles', panelDignities(chart));
-  if(isCiel) html += sec('jugement','Bulletin de l\'heure', judgmentCiel(chart, extra.hour),'jugement');
-  else html += sec('jugement','Jugement', judgmentNatal(chart, extra.lieu, extra.dateUTC, extra.tz)+`<h4>Influences du moment</h4>`+judgmentTransits(chart, extra.now),'jugement');
-  html += sec('glossaire','Glossaire', panelGlossary());
-  return html;
+  const nav = `<div class="subnav" role="tablist" aria-label="Sections du thème">`
+    + tabs.map((t,i)=>`<button class="subtab" type="button" role="tab" data-sub="${view}-${t[0]}" aria-selected="${i===0}">${t[1]}</button>`).join('') + `</div>`;
+  const panels = `<div class="subpanels">` + tabs.map((t,i)=>
+    `<section class="subpanel" id="${view}-${t[0]}" data-sub="${view}-${t[0]}"${i===0?'':' hidden'}><h3>${t[1]}</h3>${t[2]}</section>`).join('') + `</div>`;
+  return fiche + nav + panels;
 }
 function ficheItem(k,v){ return `<div class="fi"><span>${k}</span><b>${v}</b></div>`; }
+// active un sous-onglet dans une feuille
+function activateSub(sheetEl, subId){
+  sheetEl.querySelectorAll('.subtab').forEach(b=>b.setAttribute('aria-selected', String(b.dataset.sub===subId)));
+  sheetEl.querySelectorAll('.subpanel').forEach(p=>{ p.hidden = (p.dataset.sub!==subId); });
+}
 
 /* --------------------------- Format date ------------------------- */
 function fmtDate(d,tz){ return new Intl.DateTimeFormat('fr-BE',{dateStyle:'long',timeZone:tz||'Europe/Brussels'}).format(d); }
@@ -606,8 +705,12 @@ function initInteractivity(){
   }
   const hide=()=>{ bulle.hidden=true; };
   function goto(t){ const el=document.getElementById(t.getAttribute('data-goto')); if(!el) return;
+    const panel=el.closest('.subpanel'); if(panel){ const sheet=panel.closest('.sheet'); if(sheet) activateSub(sheet, panel.dataset.sub); }
     el.scrollIntoView({behavior:reduce?'auto':'smooth',block:'center'});
     el.classList.remove('flash'); void el.offsetWidth; if(!reduce) el.classList.add('flash'); hide(); }
+  // bascule des sous-onglets
+  document.addEventListener('click', e=>{ const b=e.target.closest('.subtab'); if(!b) return;
+    const sheet=b.closest('.sheet'); if(sheet) activateSub(sheet, b.dataset.sub); });
   // souris : bulle suit le curseur
   document.addEventListener('mousemove',e=>{ const t=e.target.closest('[data-bulle]'); if(t) showBulle(t,e.clientX,e.clientY); else hide(); });
   // clavier : bulle sur l'élément focalisé

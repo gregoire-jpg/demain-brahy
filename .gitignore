@@ -2,4 +2,7 @@ node_modules/
 preview-*.png
 rendered.html
 demain_*.png
+d_*.png
+cities15000.zip
+_atlas_tmp/
 .DS_Store

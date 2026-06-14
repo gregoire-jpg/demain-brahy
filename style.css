@@ -190,6 +190,19 @@ svg text:focus-visible{ outline:2px solid var(--or); }            /* glyphes/num
 .form-err{ flex-basis:100%; color:var(--rouge); font-size:.84rem; margin:4px 0 0; font-weight:600; }
 .form-err:empty{ display:none; }
 
+/* ---------- Sous-onglets (navigation par thème) ---------- */
+.subnav{ display:flex; flex-wrap:wrap; gap:2px; border-bottom:2px solid var(--enc); margin:12px 0 16px; }
+.subtab{ font-family:var(--titre); font-size:.96rem; letter-spacing:.04em; text-transform:uppercase; background:transparent;
+  border:1px solid var(--trait); border-bottom:none; color:var(--enc2); padding:6px 14px; cursor:pointer; }
+.subtab[aria-selected="true"]{ color:var(--rouge); background:var(--pap2); border-color:var(--enc); position:relative; top:2px; font-weight:600; }
+.subtab:hover{ color:var(--rouge); }
+.subtab:focus-visible{ outline:2px solid var(--or); outline-offset:-2px; }
+.subpanel{ scroll-margin-top:10px; }
+.subpanel>h3{ font-family:var(--titre); font-weight:600; letter-spacing:.08em; text-transform:uppercase; font-size:1.3rem;
+  color:var(--enc); margin:0 0 10px; padding-bottom:4px; border-bottom:1px solid var(--enc); }
+.subpanel h4{ font-family:var(--titre); font-weight:600; font-size:1.1rem; letter-spacing:.04em; color:var(--rouge); margin:16px 0 4px; }
+@media(max-width:600px){ .subnav{ flex-wrap:nowrap; overflow-x:auto; -webkit-overflow-scrolling:touch; } .subtab{ white-space:nowrap; font-size:.86rem; padding:6px 10px; } }
+
 /* ---------- Frise des firdaria & transits ---------- */
 .frise{ display:flex; border:1px solid var(--trait); margin:6px 0 10px; height:26px; }
 .fseg{ display:flex; align-items:center; justify-content:center; border-right:1px solid var(--trait2); font-family:var(--glyph); font-size:.82rem; color:var(--enc2); background:var(--pap2); overflow:hidden; cursor:help; min-width:0; }
