@@ -70,8 +70,18 @@
 
   <!-- ===================== THÈME NATAL ===================== -->
   <section class="panneau" id="vue-natal" role="tabpanel" aria-labelledby="tab-natal" hidden>
+    <div class="biblio">
+      <label for="n-saved">Bibliothèque</label>
+      <select id="n-saved"><option value="">— thèmes mémorisés —</option></select>
+      <button class="btn-sec" type="button" id="n-save">Mémoriser ce thème</button>
+      <button class="btn-sec" type="button" id="n-del" hidden>Oublier</button>
+      <span class="biblio-note">enregistré dans votre navigateur, rien n'est envoyé</span>
+    </div>
     <form class="form-natal" id="form-natal" autocomplete="off">
-      <div class="champ"><label for="n-lieu">Lieu</label><input id="n-lieu" type="text" value="Ottignies (Belgique)" size="16"></div>
+      <div class="champ champ-ville"><label for="n-city">Ville (atlas)</label>
+        <input id="n-city" type="text" placeholder="Tapez une ville…" size="18" autocomplete="off">
+        <ul id="n-city-list" class="ac-list" role="listbox" hidden></ul></div>
+      <div class="champ"><label for="n-lieu">Lieu (affiché)</label><input id="n-lieu" type="text" value="Ottignies (Belgique)" size="16"></div>
       <div class="champ"><label for="n-date">Date</label><input id="n-date" type="date" value="1986-05-22" required></div>
       <div class="champ"><label for="n-heure">Heure locale</label><input id="n-heure" type="time" value="02:08" required></div>
       <div class="champ"><label for="n-tz">Fuseau du lieu</label>
@@ -131,6 +141,7 @@
         <svg class="figure" id="fig-natal" viewBox="-24 -24 448 448" aria-label="Figure de nativité"></svg>
         <div class="asp-legende"><span class="lh">Harmonie&nbsp;⚹&nbsp;△</span><span class="lt">Tension&nbsp;□&nbsp;☍</span><span class="ln">Conjonction&nbsp;☌</span><span class="ls">★ étoile fixe</span></div>
         <p class="fig-leg">Survolez tout élément pour l'explication ; cliquez un astre ou une maison pour sa délinéation.</p>
+        <div class="exports"><button class="btn-sec" type="button" data-png="fig-natal">Image PNG</button><button class="btn-sec" type="button" onclick="window.print()">Imprimer / PDF</button></div>
       </aside>
       <div class="sheet" id="sheet-natal"></div>
     </div>

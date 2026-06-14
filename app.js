@@ -724,6 +724,54 @@ function initInteractivity(){
     const t=e.target.closest('[data-bulle]'); if(t){ const b=t.getBoundingClientRect(); showBulle(t, b.left+b.width/2, b.bottom); } else hide(); });
 }
 
+/* -------------- Atlas, bibliothèque, export ---------------------- */
+// styles inlinés pour le rendu PNG (le SVG isolé n'hérite pas de la feuille externe)
+const FIG_CSS = `text{font-family:'Segoe UI Symbol','Noto Sans Symbols2','DejaVu Sans',serif}
+.w-ring{fill:none;stroke:#2b2117;stroke-width:1.3}.w-hub{fill:#574734}.w-dot{fill:#2b2117}
+.w-zod{stroke:#c3b083;stroke-width:.7}.w-cusp{stroke:#6f6048;stroke-width:.7;stroke-dasharray:2 2}.w-axis{stroke:#866820;stroke-width:1.6}
+.w-tick{stroke:#574734;stroke-width:.5}.w-sign{font-size:16px;fill:#7c2b22}.w-house{font-size:10px;fill:#6f6048}.w-axislab{font-size:10px;fill:#866820}
+.w-star{stroke:#866820;stroke-width:1.4}.w-stem{stroke:#6f6048;stroke-width:.5}.w-pl{font-size:18px;fill:#2b2117}.w-pl.retro{fill:#243a52}
+.w-pt{font-size:14px;fill:#866820}.w-deg{font-size:8.5px;fill:#574734}.w-asp-h{stroke:#3a5530}.w-asp-t{stroke:#7c2b22}.w-asp-n{stroke:#866820}
+.w-aspbg{fill:#f3ead3}.w-aspg.w-asp-h{fill:#3a5530;stroke:none}.w-aspg.w-asp-t{fill:#7c2b22;stroke:none}.w-aspg.w-asp-n{fill:#866820;stroke:none}.w-hit{stroke:none}
+.bord{fill:none;stroke:#2b2117;stroke-width:2.2}.filet{fill:none;stroke:#574734}.cell{fill:none}.num{font-size:11px;fill:#6f6048}.sg{font-size:16px;fill:#7c2b22}.pl{font-size:19px;fill:#2b2117}.pl.retro{fill:#243a52}.axe{font-size:10px;fill:#866820}`;
+function initExtras(){
+  const $=id=>document.getElementById(id);
+  function ensureTz(tz){ const sel=$('n-tz'); if(!sel||!tz) return; if(![...sel.options].some(o=>o.value===tz)){ const o=document.createElement('option'); o.value=tz; o.textContent=tz; sel.appendChild(o);} sel.value=tz; }
+  // ---- Atlas de villes ----
+  let CITIES=null, lastRes=[]; const norm=s=>s.normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase();
+  const ci=$('n-city'), cl=$('n-city-list');
+  function load(){ if(CITIES) return; CITIES=[]; fetch('cities.json').then(r=>r.json()).then(d=>{CITIES=d;}).catch(()=>{}); }
+  function search(q){ if(!CITIES||!CITIES.length||q.trim().length<2){ cl.hidden=true; return; } const nq=norm(q.trim()), pre=[], inc=[];
+    for(let i=0;i<CITIES.length && pre.length<10;i++){ const c=CITIES[i], n=norm(c[0]), a=c[1]?norm(c[1]):n; if(n.startsWith(nq)||a.startsWith(nq)) pre.push(c); }
+    if(pre.length<10) for(let i=0;i<CITIES.length && pre.length+inc.length<10;i++){ const c=CITIES[i], n=norm(c[0]), a=c[1]?norm(c[1]):n; if((n.includes(nq)||a.includes(nq))&&!pre.includes(c)) inc.push(c); }
+    lastRes=pre.concat(inc); cl.innerHTML=lastRes.map((c,i)=>`<li role="option" data-i="${i}">${esc(c[0])} <span class="ac-c">${c[2]}</span></li>`).join(''); cl.hidden=!lastRes.length; }
+  function pick(c){ $('n-lieu').value=`${c[0]} (${c[2]})`; $('n-lat').value=c[3]; $('n-lon').value=c[4]; ensureTz(c[5]); ci.value=`${c[0]} (${c[2]})`; cl.hidden=true; }
+  if(ci){ ci.addEventListener('focus',load); ci.addEventListener('input',()=>search(ci.value));
+    ci.addEventListener('keydown',e=>{ if(e.key==='Enter'&&lastRes.length){ e.preventDefault(); pick(lastRes[0]); } });
+    cl.addEventListener('mousedown',e=>{ const li=e.target.closest('li'); if(li) pick(lastRes[+li.dataset.i]); });
+    document.addEventListener('click',e=>{ if(!e.target.closest('.champ-ville')) cl.hidden=true; }); }
+  // ---- Bibliothèque (localStorage) ----
+  const LSKEY='demain_themes';
+  const loadT=()=>{ try{ return JSON.parse(localStorage.getItem(LSKEY)||'[]'); }catch(e){ return []; } };
+  const saveT=a=>localStorage.setItem(LSKEY, JSON.stringify(a));
+  function refresh(){ const a=loadT(); $('n-saved').innerHTML='<option value="">— thèmes mémorisés —</option>'+a.map((t,i)=>`<option value="${i}">${esc(t.nom)}</option>`).join(''); if($('n-del')) $('n-del').hidden=!a.length; }
+  if($('n-save')) $('n-save').addEventListener('click',()=>{ const a=loadT();
+    a.push({ nom:((($('n-lieu').value||'Thème')+' '+($('n-date').value||'')).trim()), lieu:$('n-lieu').value, date:$('n-date').value, heure:$('n-heure').value, tz:$('n-tz').value, lat:$('n-lat').value, lon:$('n-lon').value });
+    saveT(a); refresh(); $('n-saved').value=String(a.length-1); });
+  if($('n-saved')) $('n-saved').addEventListener('change',e=>{ const t=loadT()[+e.target.value]; if(!t) return;
+    $('n-lieu').value=t.lieu; $('n-date').value=t.date; $('n-heure').value=t.heure; ensureTz(t.tz); $('n-lat').value=t.lat; $('n-lon').value=t.lon; renderNatal(); });
+  if($('n-del')) $('n-del').addEventListener('click',()=>{ const sel=$('n-saved'); if(sel.value===''){return;} const a=loadT(); a.splice(+sel.value,1); saveT(a); refresh(); });
+  refresh();
+  // ---- Export PNG ----
+  document.querySelectorAll('[data-png]').forEach(b=>b.addEventListener('click',()=>{ const svg=$(b.dataset.png); if(!svg) return;
+    const clone=svg.cloneNode(true); const st=document.createElementNS('http://www.w3.org/2000/svg','style'); st.textContent=FIG_CSS; clone.insertBefore(st, clone.firstChild);
+    const xml=new XMLSerializer().serializeToString(clone), url='data:image/svg+xml;base64,'+btoa(unescape(encodeURIComponent(xml)));
+    const img=new Image(); img.onload=()=>{ const S=900, c=document.createElement('canvas'); c.width=S; c.height=S; const x=c.getContext('2d');
+      x.fillStyle='#f3ead3'; x.fillRect(0,0,S,S); x.drawImage(img,0,0,S,S);
+      const a=document.createElement('a'); a.download='theme-demain.png'; a.href=c.toDataURL('image/png'); a.click(); };
+    img.onerror=()=>alert('Export PNG indisponible sur ce navigateur ; utilisez « Imprimer / PDF ».'); img.src=url; }));
+}
+
 /* ----------------------------- Init ------------------------------ */
 function init(){
   document.getElementById('tab-ciel').addEventListener('click',()=>setTab('ciel'));
@@ -735,6 +783,7 @@ function init(){
   document.querySelectorAll('.sysbtn').forEach(b=>b.addEventListener('click',()=>{ const v=b.closest('.panneau').id.replace('vue-','');
     if(v==='ciel'){cielSys=b.dataset.sys; renderCiel();} else {natalSys=b.dataset.sys; renderNatal();} }));
   initInteractivity();
+  initExtras();
   try{ renderCiel(); }catch(e){ console.error(e); document.getElementById('sheet-ciel').innerHTML='<p>Erreur : '+esc(e.message)+'</p>'; }
   try{ renderNatal(); }catch(e){ console.error(e); }
   if(location.hash==='#natal') setTab('natal');
