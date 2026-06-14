@@ -208,6 +208,14 @@ sup{ font-size:.66em; } small{ font-size:.82em; color:var(--muted); }
 .num{ font-family:var(--serif); font-size:11px; fill:var(--muted); cursor:pointer; } .sg{ font-family:var(--glyph); font-size:16px; fill:var(--accent); }
 .pl{ font-family:var(--glyph); font-size:19px; fill:var(--ink); cursor:pointer; } .pl.retro{ fill:var(--bleu); } .axe{ font-family:var(--serif); font-size:10px; fill:var(--gold); }
 
+/* ---------------- Baromètre boursier ---------------- */
+.baro{ margin:8px 0 14px; max-width:520px; }
+.baro-scale{ display:flex; justify-content:space-between; font-size:.72rem; color:var(--muted); text-transform:uppercase; letter-spacing:.08em; }
+.baro-track{ position:relative; height:12px; margin:4px 0 8px; border-radius:7px;
+  background:linear-gradient(90deg, #a23b2c 0%, #c79a2a 50%, #3a5530 100%); border:1px solid var(--line); }
+.baro-mark{ position:absolute; top:-4px; width:4px; height:20px; background:var(--ink); border-radius:2px; transform:translateX(-2px); box-shadow:0 0 0 2px #fff; }
+.baro-val{ font-family:var(--display); font-size:1.15rem; font-weight:600; }
+
 /* ---------------- Apprendre : cours & encyclopédie ---------------- */
 .prog{ display:flex; align-items:center; gap:12px; margin:10px 0 20px; }
 .prog-bar{ flex:1; max-width:340px; height:10px; background:var(--surface3); border:1px solid var(--line); border-radius:6px; overflow:hidden; }

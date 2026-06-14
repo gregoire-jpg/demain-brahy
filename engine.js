@@ -1043,5 +1043,6 @@ return { SIGNS, PLANETS, PMAP, ASPECTS, ROMAN, JOURS, MANSIONS, STARS, EXALT, TR
          dominants, balances, configurations, profections, firdaria, solarReturn, transitsForecast,
          synastry, moreLots, zodiacalReleasing, decennials, antiscion, contraAntiscion, antisciaContacts,
          declinations, declOf, trueNode, monomoiria, dodecatemoria, lunarReturn, transitWindows,
-         hyleg, horary, primaryDirections, distributions, parans, electional, CHALDEAN, GMY };
+         hyleg, horary, primaryDirections, distributions, parans, electional, CHALDEAN, GMY,
+         greatConjunctions, ingresses, ariesIngressChart, lunations, nextEclipses, mundaneTimeline, financialBarometer };
 });

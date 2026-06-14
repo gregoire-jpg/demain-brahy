@@ -685,13 +685,62 @@ function syncControls(view){
 }
 
 /* --------------------------- Onglets ----------------------------- */
-let apprRendered=false;
+let apprRendered=false, mondRendered=false;
 function setTab(which){
-  ['ciel','natal','apprendre'].forEach(v=>{ const t=document.getElementById('tab-'+v), s=document.getElementById('vue-'+v);
+  ['ciel','natal','mondiale','apprendre'].forEach(v=>{ const t=document.getElementById('tab-'+v), s=document.getElementById('vue-'+v);
     if(t) t.setAttribute('aria-selected', String(v===which)); if(s) s.hidden=(v!==which); });
   if(which==='apprendre' && !apprRendered){ try{ renderApprendre(); }catch(e){ console.error(e); } apprRendered=true; }
+  if(which==='mondiale' && !mondRendered){ try{ renderMondiale(); }catch(e){ console.error(e); document.getElementById('sheet-mondiale').innerHTML='<p>Erreur : '+esc(e.message)+'</p>'; } mondRendered=true; }
   if(history.replaceState) history.replaceState(null,'', which==='ciel'?'#':'#'+which);
   scrollTo(0,0);
+}
+
+/* --------------------- Mondiale & boursière ---------------------- */
+function renderMondiale(){
+  const now=new Date();
+  const sky=E.buildChart(now, BXL.lat, BXL.lon, 'whole');
+  const ing=E.ariesIngressChart(now, BXL.lat, BXL.lon);
+  const gc=E.greatConjunctions(now), lun=E.lunations(now), ecl=E.nextEclipses(now), seas=E.ingresses(now);
+  const dd=d=>fmtDate(d), sgn=l=>SIGNS[Math.floor(n360(l)/30)].nom;
+  // Ciel mondial
+  let monde=`<p class="chapeau">L'astrologie mondiale lit le ciel des nations et des époques — ingrès, lunaisons, éclipses, grandes conjonctions. Dans la tradition de Brahy, qui en fit son métier.</p>`;
+  if(ing){ const a=fmtLon(ing.chart.asc), m=fmtLon(ing.chart.mc), mo=ing.chart.planets.find(p=>p.key==='moon');
+    monde+=`<h4>Révolution de l'année — ingrès du Bélier <small>· horoscope de l'année (Bruxelles)</small></h4>`;
+    monde+=`<p>Carte dressée à l'entrée du Soleil en Bélier (équinoxe de printemps) le <b>${dd(ing.date)}</b> : Ascendant <b>${a.deg}° ${a.signNom}</b>, Milieu du Ciel <b>${m.deg}° ${m.signNom}</b>, Lune en ${fmtLon(mo.lon).deg}° ${SIGNS[mo.sign].nom}. Maître général (almutén) : <b>${PMAP[ing.chart.almuten.planet].nom}</b>.</p>`; }
+  monde+=`<h4>Le ciel mondial à l'instant</h4>`+panelPositions(sky);
+  // Cycles & éclipses
+  let cyc=`<h4>Grande conjonction Jupiter–Saturne <small>· la « mutation » des époques (≈ 20 ans)</small></h4>`;
+  cyc+=`<p>Dernière : <b>${dd(gc.last.date)}</b> à ${fmtLon(gc.last.lon).deg}° ${SIGNS[gc.last.sign].nom} — élément <b>${gc.last.elem}</b>. Prochaine : <b>${dd(gc.next.date)}</b> à ${fmtLon(gc.next.lon).deg}° ${SIGNS[gc.next.sign].nom} (${gc.next.elem}).</p>`;
+  cyc+=`<p class="sm">Ce cycle rythme l'histoire (économie, pouvoir) ; le changement d'élément — la « grande mutation » — marque un tournant d'époque. La série d'Air actuelle a débuté en 2020.</p>`;
+  cyc+=`<h4>Saisons (ingrès solaires)</h4><ul class="liste">`+seas.map(s=>`<li><span class="tdate">${dd(s.date)}</span> — ${s.nom}</li>`).join('')+`</ul>`;
+  cyc+=`<h4>Lunaisons à venir</h4><ul class="liste">`;
+  if(lun.nextNew) cyc+=`<li><span class="tdate">${dd(lun.nextNew.date)}</span> — Nouvelle Lune en ${fmtLon(lun.nextNew.lon).deg}° ${sgn(lun.nextNew.lon)}</li>`;
+  if(lun.nextFull) cyc+=`<li><span class="tdate">${dd(lun.nextFull.date)}</span> — Pleine Lune en ${fmtLon(lun.nextFull.lon).deg}° ${sgn(lun.nextFull.lon)}</li>`;
+  cyc+=`</ul><h4>Prochaines éclipses</h4><ul class="liste">`;
+  if(ecl.solar) cyc+=`<li><span class="tdate">${dd(ecl.solar.date)}</span> — éclipse <b>solaire</b> (${ecl.solar.kind}) en ${fmtLon(ecl.solar.lon).deg}° ${sgn(ecl.solar.lon)}</li>`;
+  if(ecl.lunar) cyc+=`<li><span class="tdate">${dd(ecl.lunar.date)}</span> — éclipse <b>lunaire</b> (${ecl.lunar.kind}) en ${fmtLon(ecl.lunar.lon).deg}° ${sgn(ecl.lunar.lon)}</li>`;
+  cyc+=`</ul>`;
+  const mt=E.mundaneTimeline(now,90);
+  cyc+=`<h4>Aspects mondains à venir <small>· « dates sensibles » (90 jours)</small></h4>`;
+  if(!mt.length) cyc+=`<p class="vide">Aucun aspect mondain exact dans les 90 jours.</p>`;
+  else { cyc+=`<ul class="liste">`; mt.slice(0,20).forEach(e=>{ const cl=e.fam==='harmon'?'asp-h':e.fam==='tendu'?'asp-t':'asp-n';
+    cyc+=`<li><span class="tdate">${dd(e.date)}</span> — <span class="g">${e.a.g} ${e.asp.g} ${e.b.g}</span> <b>${e.a.nom}</b> ${e.asp.nom} <b>${e.b.nom}</b> <span class="${cl}">(${e.fam})</span></li>`; }); cyc+=`</ul>`; }
+  // Boursière
+  const fb=E.financialBarometer(now), pos=Math.round((fb.index+100)/2);
+  let bo=`<p class="chapeau">Brahy fut un pionnier de l'astrologie boursière : il corrélait les configurations célestes — surtout les aspects durs — aux retournements des marchés.</p>`;
+  bo+=`<div class="notice"><b>Avertissement.</b> Outil d'étude inspiré des travaux de G.-L. Brahy. <b>Ce n'est en aucun cas un conseil financier</b> ni une prévision de marché.</div>`;
+  bo+=`<h4>Baromètre du jour</h4><div class="baro"><div class="baro-scale"><span>tendu</span><span>équilibré</span><span>porteur</span></div><div class="baro-track"><i class="baro-mark" style="left:${pos}%"></i></div><div class="baro-val ${fb.index<-12?'asp-t':fb.index>12?'asp-h':''}">${fb.index>0?'+':''}${fb.index} — ${fb.label}</div></div>`;
+  bo+=`<h4>Configurations actives <small>· aspects du jour entre les astres lents</small></h4>`;
+  if(!fb.active.length) bo+=`<p class="vide">Aucun aspect serré entre les astres lents en ce moment.</p>`;
+  else { bo+=`<ul class="liste">`; fb.active.slice(0,12).forEach(a=>{ const cl=a.fam==='harmon'?'asp-h':a.fam==='tendu'?'asp-t':'asp-n';
+    bo+=`<li><span class="g">${a.a.g} ${a.asp.g} ${a.b.g}</span> <b>${a.a.nom}</b> ${a.asp.nom} <b>${a.b.nom}</b> <span class="${cl}">(${a.fam}, orbe ${a.orb.toFixed(1)}°)</span></li>`; }); bo+=`</ul>`; }
+  bo+=`<h4>Calendrier des configurations <small>· dates sensibles (90 j)</small></h4>`;
+  if(mt.length){ bo+=`<ul class="liste">`; mt.slice(0,16).forEach(e=>{ const hard=(e.asp.deg===0||e.asp.deg===90||e.asp.deg===180), cl=e.fam==='harmon'?'asp-h':e.fam==='tendu'?'asp-t':'asp-n';
+    bo+=`<li><span class="tdate">${dd(e.date)}</span> — <span class="g">${e.a.g} ${e.asp.g} ${e.b.g}</span> <b>${e.a.nom}</b> ${e.asp.nom} <b>${e.b.nom}</b> <span class="${cl}">${hard?'· dur':'· doux'}</span></li>`; }); bo+=`</ul>`; }
+  const tabs=[['monde','Ciel mondial',monde],['cycles','Cycles & éclipses',cyc],['boursiere','Boursière',bo]];
+  const nav=`<div class="subnav" role="tablist" aria-label="Mondiale">`+tabs.map((t,i)=>`<button class="subtab" type="button" data-sub="mond-${t[0]}" aria-selected="${i===0}">${t[1]}</button>`).join('')+`</div>`;
+  const panels=`<div class="subpanels">`+tabs.map((t,i)=>`<section class="subpanel" id="mond-${t[0]}" data-sub="mond-${t[0]}"${i?' hidden':''}><h3>${t[1]}</h3>${t[2]}</section>`).join('')+`</div>`;
+  document.getElementById('sheet-mondiale').innerHTML=nav+panels;
 }
 
 /* --------------------------- Apprendre --------------------------- */
@@ -816,6 +865,7 @@ function init(){
   document.getElementById('tab-ciel').addEventListener('click',()=>setTab('ciel'));
   document.getElementById('tab-natal').addEventListener('click',()=>setTab('natal'));
   const ta=document.getElementById('tab-apprendre'); if(ta) ta.addEventListener('click',()=>setTab('apprendre'));
+  const tm=document.getElementById('tab-mondiale'); if(tm) tm.addEventListener('click',()=>setTab('mondiale'));
   document.getElementById('form-natal').addEventListener('submit',e=>{e.preventDefault(); renderNatal();});
   document.querySelectorAll('.figbtn').forEach(b=>b.addEventListener('click',()=>{ const v=b.closest('.panneau').id.replace('vue-','');
     if(v==='ciel'){cielFig=b.dataset.mode; if(lastCiel)drawFigure(document.getElementById('fig-ciel'),lastCiel,cielFig);}
@@ -826,7 +876,7 @@ function init(){
   initExtras();
   try{ renderCiel(); }catch(e){ console.error(e); document.getElementById('sheet-ciel').innerHTML='<p>Erreur : '+esc(e.message)+'</p>'; }
   try{ renderNatal(); }catch(e){ console.error(e); }
-  if(location.hash==='#natal') setTab('natal'); else if(location.hash==='#apprendre') setTab('apprendre');
+  if(location.hash==='#natal') setTab('natal'); else if(location.hash==='#apprendre') setTab('apprendre'); else if(location.hash==='#mondiale') setTab('mondiale');
   setInterval(()=>{ if(!document.getElementById('vue-ciel').hidden) try{ renderCiel(); }catch(e){} }, 60000);
 }
 if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',init); else init();
