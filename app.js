@@ -419,9 +419,77 @@ function panelGlossary(){
   return r+`</div>`;
 }
 
+/* --------- Dominantes & balances, configurations, prévisions ----- */
+const FIRNAME={nodeN:'Tête du Dragon', nodeS:'Queue du Dragon'}, FIRG={nodeN:'☊', nodeS:'☋'};
+const firNom=k=>PMAP[k]?PMAP[k].nom:(FIRNAME[k]||k), firG=k=>PMAP[k]?PMAP[k].g:(FIRG[k]||'•');
+const ELEMCOL={Feu:'var(--rouge)',Terre:'var(--vert)',Air:'var(--or)',Eau:'var(--bleu)'};
+
+function panelDominants(chart){
+  const dom=E.dominants(chart), bal=E.balances(chart);
+  let r=`<h4>Dominantes planétaires</h4><p class="sm">Activité de chaque astre (angularité, dignités, aspects aux luminaires et au maître d'ascendant, maîtrise d'amas).</p><div class="temper">`;
+  dom.forEach(d=> r+=`<div class="thum"><div class="tlab"><span class="g">${d.g}</span> ${d.nom}</div><div class="tbar"><i style="width:${d.pct}%;background:var(--or)"></i></div><div class="tpct">${d.pct}%</div></div>`);
+  r+=`</div><p class="tsyn">Trio dominant : <b>${dom.slice(0,3).map(d=>d.nom).join(', ')}</b>.</p>`;
+  const barRow=(lab,key,pct,col)=>`<div class="thum"><div class="tlab">${lab}</div><div class="tbar"><i style="width:${pct}%;background:${col}"></i></div><div class="tpct">${pct}%</div></div>`;
+  r+=`<h4>Éléments <small>· dominant ${bal.elemDom}</small></h4><div class="temper">`+['Feu','Terre','Air','Eau'].map(e=>barRow(e,e,bal.elemPct[e],ELEMCOL[e])).join('')+`</div>`;
+  r+=`<h4>Modes <small>· dominant ${bal.modeDom}</small></h4><div class="temper">`+['Cardinal','Fixe','Mutable'].map(m=>barRow(m,m,bal.modePct[m],'var(--enc2)')).join('')+`</div>`;
+  r+=`<p><b>Hémisphères :</b> ${bal.above} astre(s) au-dessus de l'horizon, ${bal.below} en dessous ; ${bal.east} à l'orient, ${bal.west} à l'occident — ${bal.above>bal.below?'vie tournée vers le dehors et le manifeste':'vie plus intérieure et réfléchie'}.</p>`;
+  return r;
+}
+
+function panelConfigurations(chart){
+  const cfg=E.configurations(chart);
+  if(!cfg.length) return `<p class="vide">Aucune configuration majeure (grand trigone, T-carré, grande croix, amas) entre les sept astres.</p>`;
+  let r=`<ul class="liste">`;
+  cfg.forEach(x=>{ const g=x.keys.map(k=>`<span class="g">${PMAP[k].g}</span>`).join(' '); let d='';
+    if(x.type==='Grand trigone') d=`harmonie circulaire en signes ${x.elem.toLowerCase()} — don, facilité, équilibre qui se suffit`;
+    else if(x.type==='T-carré') d=`tension focalisée sur <b><span class="g">${PMAP[x.apex].g}</span> ${PMAP[x.apex].nom}</b> (sommet) — moteur d'action sous contrainte`;
+    else if(x.type==='Grande croix') d=`quadruple tension en croix — grande énergie à canaliser, écartèlement entre quatre exigences`;
+    else if(x.type==='Amas') d=`concentration de ${x.keys.length} astres en <b>${SIGNS[x.sign].nom}</b> — domaine de vie fortement accentué`;
+    r+=`<li><b>${x.type}</b> : ${g} — ${d}.</li>`; });
+  return r+`</ul>`;
+}
+
+function panelPrevisions(chart, extra){
+  const birth=extra.dateUTC, at=new Date();
+  const pr=E.profections(birth, at, chart.ascSign);
+  const fd=E.firdaria(birth, at, chart.day);
+  const sunLon=chart.planets.find(p=>p.key==='sun').lon;
+  let r='';
+  // Profections
+  const lordP=chart.planets.find(p=>p.key===pr.lord);
+  r+=`<h4>Profection de l'année <small>· technique hellénistique</small></h4>`;
+  r+=`<p>Année de vie <b>${pr.age}–${pr.age+1}</b> : l'Ascendant se profecte en <b>${SIGNS[pr.profSign].nom}</b> (maison <b>${ROMAN[pr.profHouse]}</b> — ${HOUSE_MEAN[pr.profHouse].dom}). `;
+  r+=`<b>Seigneur de l'année :</b> ${leP(lordP)}<b>${lordP.nom}</b>, natal en ${fmtLon(lordP.lon).deg}° ${SIGNS[lordP.sign].nom} (${lordP.dig.label}), maison ${ROMAN[lordP.house]} — c'est le significateur premier de l'année : ses transits et son état natal donnent le ton. `;
+  r+=`Mois profecté en cours : <b>${SIGNS[pr.profMonthSign].nom}</b>, seigneur ${PMAP[pr.monthLord].nom}.</p>`;
+  // Firdaria
+  r+=`<h4>Firdaria <small>· seigneurs du temps (perse)</small></h4>`;
+  r+=`<p>Période majeure : <b>${firNom(fd.major.lord)}</b> (${Math.round(fd.major.start)}–${Math.round(fd.major.end)} ans)`;
+  if(fd.minor) r+=`, sous-période de <b>${firNom(fd.minor.lord)}</b> (${fd.minor.start.toFixed(1)}–${fd.minor.end.toFixed(1)} ans)`;
+  r+=`.</p><div class="frise">`;
+  fd.timeline.forEach(p=>{ const w=(p.end-p.start)/75*100, cur=(p.lord===fd.major.lord&&p.start===fd.major.start);
+    r+=`<span class="fseg${cur?' cur':''}" style="width:${w}%" data-bulle="${esc(firNom(p.lord)+' : '+Math.round(p.start)+'–'+Math.round(p.end)+' ans')}"><span class="g">${firG(p.lord)}</span></span>`; });
+  r+=`</div>`;
+  // Révolution solaire
+  const sr=E.solarReturn(sunLon, at, extra.lat, extra.lon);
+  if(sr){ const fa=fmtLon(sr.chart.asc), fm=fmtLon(sr.chart.mc), srMoon=sr.chart.planets.find(p=>p.key==='moon');
+    r+=`<h4>Révolution solaire <small>· carte de l'année en cours</small></h4>`;
+    r+=`<p>Retour du Soleil à son degré natal le <b>${fmtDate(sr.date)}</b>. Ascendant de l'année : <b>${fa.deg}° ${fa.signNom}</b> — Milieu du Ciel <b>${fm.deg}° ${fm.signNom}</b>. Lune de l'année en ${fmtLon(srMoon.lon).deg}° ${SIGNS[srMoon.sign].nom}. `;
+    r+=`Thème ${sr.chart.day?'diurne':'nocturne'} ; l'angle ascendant de la révolution colore l'orientation de l'année.</p>`;
+  }
+  // Transits à venir
+  const tr=E.transitsForecast(chart, at, 12);
+  r+=`<h4>Transits à venir <small>· lentes (Mars, Jupiter, Saturne) sur 12 mois</small></h4>`;
+  if(!tr.length) r+=`<p class="vide">Aucun transit majeur des lentes au thème dans les 12 mois.</p>`;
+  else { r+=`<ul class="liste">`;
+    tr.slice(0,18).forEach(t=>{ const cl=t.asp.fam==='harmon'?'asp-h':t.asp.fam==='tendu'?'asp-t':'asp-n';
+      r+=`<li><span class="tdate">${fmtDate(t.when)}</span> — <span class="g">${t.mover.g} ${t.asp.g}</span> <b>${t.mover.nom}</b> ${t.asp.nom} <b>${t.target.nom}</b> natal <span class="${cl}">(${t.asp.nom})</span></li>`; });
+    r+=`</ul>`; if(tr.length>18) r+=`<p class="sm">… et ${tr.length-18} autre(s) sur la période.</p>`; }
+  return r;
+}
+
 /* ----------------------- assemblage du cockpit ------------------- */
-const SECTIONS_CIEL = [['fig','Figure'],['positions','Positions'],['aspects','Aspects'],['maisons','Maisons'],['astres','Les sept astres'],['lots','Lots & nœuds'],['etoiles','Étoiles fixes'],['temperament','Climat'],['dignites','Table des dignités'],['jugement','Bulletin'],['glossaire','Glossaire']];
-const SECTIONS_NATAL = [['fig','Figure'],['positions','Positions'],['aspects','Aspects'],['maisons','Les douze maisons'],['astres','Les sept astres'],['lots','Lots & nœuds'],['etoiles','Étoiles fixes'],['temperament','Tempérament'],['dignites','Table des dignités'],['jugement','Jugement'],['glossaire','Glossaire']];
+const SECTIONS_CIEL = [['positions','Positions'],['aspects','Aspects'],['config','Configurations'],['analyse','Dominantes'],['maisons','Maisons'],['astres','Les sept astres'],['lots','Lots & nœuds'],['etoiles','Étoiles fixes'],['temperament','Climat'],['dignites','Dignités'],['jugement','Bulletin'],['glossaire','Glossaire']];
+const SECTIONS_NATAL = [['positions','Positions'],['aspects','Aspects'],['config','Configurations'],['analyse','Dominantes'],['maisons','Maisons'],['astres','Astres'],['lots','Lots & nœuds'],['etoiles','Étoiles'],['temperament','Tempérament'],['previsions','Prévisions'],['dignites','Dignités'],['jugement','Jugement'],['glossaire','Glossaire']];
 
 function buildSheet(view, chart, extra){
   const isCiel = view==='ciel';
@@ -441,11 +509,14 @@ function buildSheet(view, chart, extra){
     + `</div>`;
   html += sec('positions','Positions & dignités', panelPositions(chart));
   html += sec('aspects','Aspects & réceptions', panelAspectarian(chart));
+  html += sec('config','Configurations d\'aspects', panelConfigurations(chart));
+  html += sec('analyse','Dominantes & balances', panelDominants(chart));
   html += sec('maisons', isCiel?'Les maisons':'Les douze maisons — interprétation', panelHouses(chart));
   html += sec('astres','Les sept astres — délinéation', panelPlanets(chart));
   html += sec('lots','Lots & nœuds', panelLots(chart));
   html += sec('etoiles','Étoiles fixes', panelStars(chart));
   html += sec('temperament', isCiel?'Climat & tempérament du moment':'Tempérament & complexion', panelTemperament(chart)+(isCiel?panelMoon(chart):''));
+  if(!isCiel) html += sec('previsions','Prévisions — profections, firdaria, révolution solaire, transits', panelPrevisions(chart, extra),'jugement');
   html += sec('dignites','Table des dignités essentielles', panelDignities(chart));
   if(isCiel) html += sec('jugement','Bulletin de l\'heure', judgmentCiel(chart, extra.hour),'jugement');
   else html += sec('jugement','Jugement', judgmentNatal(chart, extra.lieu, extra.dateUTC, extra.tz)+`<h4>Influences du moment</h4>`+judgmentTransits(chart, extra.now),'jugement');
@@ -504,7 +575,7 @@ function renderNatal(){
     const chart=E.buildChart(dateUTC, lat, lon, natalSys);
     lastNatal=chart;
     drawFigure(document.getElementById('fig-natal'), chart, natalFig);
-    document.getElementById('sheet-natal').innerHTML = buildSheet('natal', chart, {lieu, dateUTC, tz, now:nowLite()});
+    document.getElementById('sheet-natal').innerHTML = buildSheet('natal', chart, {lieu, dateUTC, tz, lat, lon, now:nowLite()});
     syncControls('natal');
   }catch(e){ console.error(e); if(errBox) errBox.textContent='Erreur de calcul : '+e.message; }
 }

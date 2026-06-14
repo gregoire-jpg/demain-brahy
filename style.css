@@ -190,6 +190,13 @@ svg text:focus-visible{ outline:2px solid var(--or); }            /* glyphes/num
 .form-err{ flex-basis:100%; color:var(--rouge); font-size:.84rem; margin:4px 0 0; font-weight:600; }
 .form-err:empty{ display:none; }
 
+/* ---------- Frise des firdaria & transits ---------- */
+.frise{ display:flex; border:1px solid var(--trait); margin:6px 0 10px; height:26px; }
+.fseg{ display:flex; align-items:center; justify-content:center; border-right:1px solid var(--trait2); font-family:var(--glyph); font-size:.82rem; color:var(--enc2); background:var(--pap2); overflow:hidden; cursor:help; min-width:0; }
+.fseg:last-child{ border-right:none; }
+.fseg.cur{ background:var(--enc); color:var(--pap); font-weight:bold; }
+.tdate{ font-variant-numeric:tabular-nums; color:var(--enc2); font-size:.82rem; white-space:nowrap; }
+
 /* ---------- Avis de repli (hautes latitudes) ---------- */
 .notice{ background:#f6e9c8; border:1px solid var(--or); border-left:3px solid var(--rouge); padding:7px 11px; font-size:.86rem; margin:0 0 12px; }
 

@@ -30,6 +30,8 @@ Deux modes :
 - **28 demeures lunaires**, phase, **application** et **course vide** de la Lune
 - **Heures planétaires** inégales (ordre chaldéen) pour le ciel du moment
 - **Interprétation par maison** et **par astre** (signe + maison + dignité + aspects), survols explicatifs et liens internes
+- **Analyse** : dominantes planétaires (pondération traditionnelle), balances (éléments / modes / hémisphères), **configurations** (grand trigone, T-carré, grande croix, amas)
+- **Prévisions traditionnelles** : **profections annuelles** (seigneur de l'année), **firdaria** (seigneurs du temps perses), **révolution solaire** (retour réel du Soleil au degré natal) et **transits à venir** (lentes sur 12 mois) — la prédictive hellénistique/perse, pas l'horoscope grand public
 
 ## Architecture
 

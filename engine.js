@@ -558,6 +558,122 @@ function buildChart(date, lat, lonE, system) {
   return chart;
 }
 
+/* ===================== Analyse & prévisions ====================== */
+// Dominantes planétaires (activité, critères traditionnels : angularité, dignités,
+// aspects aux luminaires et au maître d'ascendant, maîtrise d'amas, secte)
+function dominants(chart){
+  const score={}; PLANETS.forEach(p=>score[p.key]=0);
+  const ascRulerKey=SIGNS[chart.ascSign].dom, lum=['sun','moon'];
+  chart.planets.forEach(p=>{
+    let s=2;
+    s += p.acc.angular==='angulaire'?5:p.acc.angular==='succédent'?2:0;
+    if (p.house===1) s+=3;
+    s += Math.max(0, p.dig.score);
+    if (p.acc.joie) s+=1; if (p.hayz) s+=1; else if (p.inSect) s+=0.5;
+    const asps=chart.aspects.filter(a=>a.a.key===p.key||a.b.key===p.key);
+    s += asps.length*0.7;
+    asps.forEach(a=>{ const o=a.a.key===p.key?a.b.key:a.a.key; if(lum.includes(o)) s+=1.5; if(o===ascRulerKey) s+=1.5; });
+    if (p.key===ascRulerKey) s+=4;
+    if (p.key==='sun'||p.key==='moon') s+=2;
+    if (p.retro) s-=1.5; if (p.solar==='combuste') s-=2;
+    score[p.key]=Math.max(0,s);
+  });
+  const bySign={}; chart.planets.forEach(p=>{(bySign[p.sign]=bySign[p.sign]||[]).push(p);});
+  Object.keys(bySign).forEach(s=>{ if(bySign[s].length>=3) score[SIGNS[s].dom]+=2; });
+  const tot=Object.values(score).reduce((a,b)=>a+b,0)||1;
+  return PLANETS.map(p=>({key:p.key,nom:p.nom,g:p.g,score:score[p.key],pct:Math.round(score[p.key]/tot*100)})).sort((a,b)=>b.score-a.score);
+}
+// Balances : éléments, modes, hémisphères (luminaires et maître d'ascendant pondérés)
+function balances(chart){
+  const elem={Feu:0,Terre:0,Air:0,Eau:0}, mode={Cardinal:0,Fixe:0,Mutable:0};
+  const ascRulerKey=SIGNS[chart.ascSign].dom;
+  const w=p=>(p.key==='sun'||p.key==='moon'?3:p.key===ascRulerKey?2:1);
+  chart.planets.forEach(p=>{ elem[SIGNS[p.sign].elem]+=w(p); mode[SIGNS[p.sign].mode]+=w(p); });
+  elem[SIGNS[chart.ascSign].elem]+=3; mode[SIGNS[chart.ascSign].mode]+=3;
+  let above=0,below=0,east=0,west=0;
+  chart.planets.forEach(p=>{ if([7,8,9,10,11,12].includes(p.house))above++; else below++; if([10,11,12,1,2,3].includes(p.house))east++; else west++; });
+  const pct=o=>{ const t=Object.values(o).reduce((a,b)=>a+b,0)||1, r={}; for(const k in o) r[k]=Math.round(o[k]/t*100); return r; };
+  return { elem, mode, elemPct:pct(elem), modePct:pct(mode), above, below, east, west,
+           elemDom:Object.keys(elem).sort((a,b)=>elem[b]-elem[a])[0], modeDom:Object.keys(mode).sort((a,b)=>mode[b]-mode[a])[0] };
+}
+// Configurations d'aspects (selon les anciens : trigone/carré/opposition ; pas de yod/quinconce)
+function configurations(chart){
+  const A=chart.aspects, keys=chart.planets.map(p=>p.key), out=[];
+  const has=(k1,k2,deg)=>A.find(a=>((a.a.key===k1&&a.b.key===k2)||(a.a.key===k2&&a.b.key===k1))&&a.asp.deg===deg);
+  for(let i=0;i<keys.length;i++)for(let j=i+1;j<keys.length;j++)for(let k=j+1;k<keys.length;k++)
+    if(has(keys[i],keys[j],120)&&has(keys[j],keys[k],120)&&has(keys[i],keys[k],120))
+      out.push({type:'Grand trigone', keys:[keys[i],keys[j],keys[k]], elem:SIGNS[chart.planets.find(p=>p.key===keys[i]).sign].elem});
+  const crosses=[];
+  for(let i=0;i<keys.length;i++)for(let j=i+1;j<keys.length;j++)for(let k=j+1;k<keys.length;k++)for(let l=k+1;l<keys.length;l++){
+    const q=[keys[i],keys[j],keys[k],keys[l]]; let opp=0,sq=0;
+    for(let a=0;a<4;a++)for(let b=a+1;b<4;b++){ if(has(q[a],q[b],180))opp++; else if(has(q[a],q[b],90))sq++; }
+    if(opp>=2&&sq>=4){ out.push({type:'Grande croix', keys:q}); crosses.push(q); }
+  }
+  for(let i=0;i<keys.length;i++)for(let j=i+1;j<keys.length;j++){ if(has(keys[i],keys[j],180))
+    for(const k of keys){ if(k!==keys[i]&&k!==keys[j]&&has(keys[i],k,90)&&has(keys[j],k,90)){
+      const trio=[keys[i],keys[j],k];
+      if(!crosses.some(c=>trio.every(x=>c.includes(x)))) out.push({type:'T-carré', keys:trio, apex:k});
+    } } }
+  const bySign={}; chart.planets.forEach(p=>{(bySign[p.sign]=bySign[p.sign]||[]).push(p);});
+  Object.keys(bySign).forEach(s=>{ if(bySign[s].length>=3) out.push({type:'Amas', keys:bySign[s].map(p=>p.key), sign:+s}); });
+  return out;
+}
+// Profections annuelles (l'Ascendant avance d'un signe par an ; seigneur de l'année)
+function profections(birthDate, atDate, ascSign){
+  const yearMs=365.2422*86400000, ageF=(atDate-birthDate)/yearMs, age=Math.floor(ageF);
+  const profSign=((ascSign+age)%12+12)%12, profHouse=(age%12)+1;
+  const monthIdx=Math.floor((ageF-age)*12), profMonthSign=((profSign+monthIdx)%12+12)%12;
+  return { age, profSign, lord:SIGNS[profSign].dom, profHouse, monthIdx, profMonthSign, monthLord:SIGNS[profMonthSign].dom };
+}
+// Firdaria (seigneurs du temps perses : périodes majeures + mineures)
+const FIRDUR={sun:10,venus:8,mercury:13,moon:9,saturn:11,jupiter:12,mars:7,nodeN:3,nodeS:2};
+const FIR_DAY=['sun','venus','mercury','moon','saturn','jupiter','mars','nodeN','nodeS'];
+const FIR_NIGHT=['moon','saturn','jupiter','mars','sun','venus','mercury','nodeN','nodeS'];
+const FIR7_DAY=['sun','venus','mercury','moon','saturn','jupiter','mars'];
+const FIR7_NIGHT=['moon','saturn','jupiter','mars','sun','venus','mercury'];
+function firdaria(birthDate, atDate, isDay){
+  const seq=isDay?FIR_DAY:FIR_NIGHT, sub7=isDay?FIR7_DAY:FIR7_NIGHT;
+  let ageF=(atDate-birthDate)/(365.2422*86400000); if(ageF>=75) ageF=ageF%75;
+  const timeline=[]; let t=0;
+  for(const lord of seq){ timeline.push({lord, start:t, end:t+FIRDUR[lord]}); t+=FIRDUR[lord]; }
+  const major=timeline.find(p=>ageF>=p.start&&ageF<p.end)||timeline[timeline.length-1];
+  let minor=null, subs=[];
+  if(major.lord!=='nodeN'&&major.lord!=='nodeS'){
+    const subDur=(major.end-major.start)/7, startIdx=sub7.indexOf(major.lord);
+    for(let i=0;i<7;i++) subs.push({lord:sub7[(startIdx+i)%7], start:major.start+i*subDur, end:major.start+(i+1)*subDur});
+    minor=subs.find(s=>ageF>=s.start&&ageF<s.end);
+  }
+  return { ageF, major, minor, timeline, subs };
+}
+// Révolution solaire : dernier retour du Soleil à son degré natal (début de l'année solaire)
+function solarReturn(natalSunLon, atDate, lat, lonE){
+  let t=A.SearchSunLongitude(natalSunLon, new Date(atDate.getTime()-367*86400000), 400), last=null;
+  while(t && t.date.getTime()<=atDate.getTime()){ last=t.date; t=A.SearchSunLongitude(natalSunLon, new Date(t.date.getTime()+86400000), 400); }
+  if(!last) return null;
+  return { date:last, chart:buildChart(last, lat, lonE, 'whole') };
+}
+// Transits à venir : aspects majeurs des planètes lentes (Mars, Jupiter, Saturne) au thème natal
+function transitsForecast(natal, fromDate, months){
+  const targets=natal.planets.map(p=>({key:p.key,nom:p.nom,g:p.g,lon:p.lon}))
+    .concat([{key:'asc',nom:'Ascendant',g:'Asc',lon:natal.asc},{key:'mc',nom:'Milieu du Ciel',g:'MC',lon:natal.mc}]);
+  const movers=['mars','jupiter','saturn'], days=Math.round(months*30.44), events=[], prev={};
+  for(let d=0; d<=days; d++){
+    const t=new Date(fromDate.getTime()+d*86400000);
+    for(const mk of movers){ const tl=tropLon(PMAP[mk].body,t);
+      targets.forEach(tg=>{ const sepd=n360(tl-tg.lon);
+        for(const ang of [0,60,90,120,180]){
+          let o1=sepd-ang; if(o1>180)o1-=360; if(o1<-180)o1+=360;
+          let o2=sepd-(360-ang); if(o2>180)o2-=360; if(o2<-180)o2+=360;
+          const o=Math.abs(o1)<Math.abs(o2)?o1:o2, id=mk+'_'+tg.key+'_'+ang;
+          if(prev[id]!==undefined && Math.sign(prev[id])!==Math.sign(o) && Math.abs(prev[id])<3 && Math.abs(o)<3 && d>0)
+            events.push({mover:PMAP[mk], target:tg, asp:ASPECTS.find(x=>x.deg===ang), when:t, days:d});
+          prev[id]=o;
+        } });
+    }
+  }
+  return events.sort((a,b)=>a.days-b.days);
+}
+
 /* --------------------------- Utilitaires -------------------------- */
 function fmtLon(lon){
   if (!Number.isFinite(lon)) return { deg:NaN, min:NaN, sign:0, signNom:'?', signG:'?', txt:'—', short:'—' };
@@ -569,5 +685,6 @@ function fmtLon(lon){
 
 return { SIGNS, PLANETS, PMAP, ASPECTS, ROMAN, JOURS, MANSIONS, STARS, EXALT, TRIPL, BOUNDS, FACE_ORDER,
          n360, sep, fmtLon, tropLon, obliq, ascLon, mcLon, dignities, almutenOfDegree,
-         buildChart, planetaryHour, moonPhase, weekdayBxl, angularType, boundRuler, faceRuler };
+         buildChart, planetaryHour, moonPhase, weekdayBxl, angularType, boundRuler, faceRuler,
+         dominants, balances, configurations, profections, firdaria, solarReturn, transitsForecast };
 });
