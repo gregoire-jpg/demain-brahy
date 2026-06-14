@@ -947,6 +947,87 @@ function electional(fromDate, toDate, lat, lonE, stepMin){
   return out.sort((a,b)=>b.score-a.score);
 }
 
+/* ============== Astrologie mondiale & boursière (Brahy) ========== */
+const ELEMENT_OF = s => SIGNS[s].elem;
+// chercheur générique de conjonction géocentrique entre deux corps
+function findConjunctions(bodyA, bodyB, from, to){
+  const diffAt=d=>{ let x=n360(tropLon(bodyA,d)-tropLon(bodyB,d)); if(x>180)x-=360; return x; };
+  const res=[]; const step=6*86400000; let prev=null, pt=null;
+  for(let t=from.getTime(); t<=to.getTime(); t+=step){ const d=new Date(t), cur=diffAt(d);
+    if(prev!==null && Math.sign(prev)!==Math.sign(cur) && Math.abs(prev)<40 && Math.abs(cur)<40){
+      let lo=pt.getTime(), hi=t, dlo=diffAt(new Date(lo));
+      for(let k=0;k<44;k++){ const mid=(lo+hi)/2, dm=diffAt(new Date(mid)); if(Math.sign(dm)===Math.sign(dlo)) lo=mid; else hi=mid; }
+      const md=new Date((lo+hi)/2); res.push({ date:md, lon:tropLon(bodyA,md) });
+    }
+    prev=cur; pt=d;
+  }
+  return res;
+}
+// Grande conjonction Jupiter–Saturne (la « mutation » mondiale)
+function greatConjunctions(date){
+  const all=findConjunctions('Jupiter','Saturn', new Date(date.getTime()-25*365.25*86400000), new Date(date.getTime()+25*365.25*86400000));
+  const last=[...all].reverse().find(c=>c.date<=date), next=all.find(c=>c.date>date);
+  const tag=c=>c?{ date:c.date, lon:c.lon, sign:Math.floor(c.lon/30), elem:ELEMENT_OF(Math.floor(c.lon/30)) }:null;
+  return { last:tag(last), next:tag(next) };
+}
+// Ingrès solaires (équinoxes/solstices) autour de la date
+function ingresses(date){
+  const names=['Bélier (équinoxe de printemps)','Cancer (solstice d\'été)','Balance (équinoxe d\'automne)','Capricorne (solstice d\'hiver)'];
+  const out=[]; for(let i=0;i<4;i++){ const t=A.SearchSunLongitude(i*90, new Date(date.getTime()-1), 380); if(t) out.push({ deg:i*90, nom:names[i], date:t.date }); }
+  return out.sort((a,b)=>a.date-b.date);
+}
+// Carte d'ingrès du Bélier de l'année (révolution mondiale, pour un lieu de référence)
+function ariesIngressChart(date, lat, lonE){
+  // dernier passage du Soleil à 0° Bélier avant 'date'
+  let t=A.SearchSunLongitude(0, new Date(date.getTime()-380*86400000), 400), last=null;
+  while(t && t.date.getTime()<=date.getTime()){ last=t.date; t=A.SearchSunLongitude(0, new Date(t.date.getTime()+86400000), 380); }
+  if(!last) return null; return { date:last, chart:buildChart(last, lat, lonE, 'whole') };
+}
+// Lunaisons : dernières et prochaines nouvelle/pleine lune
+function lunations(date){
+  const find=(target,fwd)=>{ const t=A.SearchMoonPhase(target, new Date(date.getTime()+(fwd?0:-32*86400000)), fwd?40:34);
+    if(!fwd){ let last=null,tt=t; while(tt&&tt.date.getTime()<=date.getTime()){ last=tt.date; tt=A.SearchMoonPhase(target,new Date(tt.date.getTime()+86400000),40);} return last; }
+    return t?t.date:null; };
+  const mk=d=>d?{ date:d, lon:tropLon('Moon',d), sun:tropLon('Sun',d) }:null;
+  return { lastNew:mk(find(0,false)), nextNew:mk(find(0,true)), lastFull:mk(find(180,false)), nextFull:mk(find(180,true)) };
+}
+// Prochaines éclipses (solaire & lunaire)
+function nextEclipses(date){
+  const out={};
+  try{ const e=A.SearchGlobalSolarEclipse(date); out.solar={ date:e.peak.date, kind:e.kind, lon:tropLon('Sun',e.peak.date) }; }catch(e){}
+  try{ const l=A.SearchLunarEclipse(date); out.lunar={ date:l.peak.date, kind:l.kind, lon:tropLon('Moon',l.peak.date) }; }catch(e){}
+  return out;
+}
+// Aspects mondains exacts à venir (« dates sensibles » de Brahy) entre les astres lents (hors Lune)
+function mundaneTimeline(fromDate, days){
+  const bodies=['sun','mercury','venus','mars','jupiter','saturn'], events=[], prev={};
+  const off=(la,lb,ang)=>{ let o1=n360(la-lb)-ang; if(o1>180)o1-=360; if(o1<-180)o1+=360; let o2=n360(la-lb)-(360-ang); if(o2>180)o2-=360; if(o2<-180)o2+=360; return Math.abs(o1)<Math.abs(o2)?o1:o2; };
+  for(let d=0; d<=days; d++){ const t=new Date(fromDate.getTime()+d*86400000), lon={}; bodies.forEach(k=>lon[k]=tropLon(PMAP[k].body,t));
+    for(let i=0;i<bodies.length;i++) for(let j=i+1;j<bodies.length;j++) for(const ang of [0,60,90,120,180]){
+      const a=bodies[i], b=bodies[j], id=a+b+ang, o=off(lon[a],lon[b],ang);
+      if(prev[id]!==undefined && Math.sign(prev[id])!==Math.sign(o) && Math.abs(prev[id])<2 && Math.abs(o)<2 && d>0){
+        const asp=ASPECTS.find(x=>x.deg===ang); events.push({ a:PMAP[a], b:PMAP[b], asp, date:t, days:d, fam:aspectFamily(a,b,asp) });
+      }
+      prev[id]=o;
+    }
+  }
+  return events.sort((x,y)=>x.days-y.days);
+}
+// Baromètre boursier (méthode Brahy, heuristique) : pression des aspects durs vs doux du jour
+function financialBarometer(date){
+  const bodies=['sun','mercury','venus','mars','jupiter','saturn'], lon={}; bodies.forEach(k=>lon[k]=tropLon(PMAP[k].body,date));
+  let score=0; const active=[];
+  for(let i=0;i<bodies.length;i++) for(let j=i+1;j<bodies.length;j++){ const a=bodies[i], b=bodies[j]; let dd=Math.abs(lon[a]-lon[b]); if(dd>180)dd=360-dd;
+    for(const asp of ASPECTS){ const orb=6; if(Math.abs(dd-asp.deg)<=orb){ const tight=1-Math.abs(dd-asp.deg)/orb;
+      const mal=(a==='mars'||a==='saturn')||(b==='mars'||b==='saturn'); const fam=aspectFamily(a,b,asp);
+      let w = fam==='harmon'? +1 : fam==='tendu'? -1.4 : (mal?-1:+0.4); if(mal&&fam==='tendu') w-=0.6;
+      score += w*tight; active.push({a:PMAP[a],b:PMAP[b],asp,fam,orb:Math.abs(dd-asp.deg)}); break; } }
+  }
+  const idx=Math.max(-100,Math.min(100,Math.round(score*22)));
+  const label = idx>=35?'Porteur (configurations favorables dominantes)' : idx>=12?'Plutôt soutenu' : idx>-12?'Indécis / équilibré' : idx>-35?'Sous tension' : 'Fortement tendu (prudence)';
+  return { index:idx, label, active:active.sort((x,y)=>x.orb-y.orb) };
+}
+
 /* --------------------------- Utilitaires -------------------------- */
 function fmtLon(lon){
   if (!Number.isFinite(lon)) return { deg:NaN, min:NaN, sign:0, signNom:'?', signG:'?', txt:'—', short:'—' };
