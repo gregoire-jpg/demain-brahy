@@ -674,6 +674,279 @@ function transitsForecast(natal, fromDate, months){
   return events.sort((a,b)=>a.days-b.days);
 }
 
+/* ============== Techniques avancées & relationnelles ============= */
+const CHALDEAN = ['saturn','jupiter','mars','sun','venus','mercury','moon'];
+const MINOR_YEARS = [15,8,20,25,19,20,8,15,12,27,30,12];          // libération zodiacale, par signe
+const LESSER_YEARS = { saturn:30, jupiter:12, mars:15, sun:19, venus:8, mercury:20, moon:25 }; // décennies, alcocoden (mineures)
+const GMY = { // années planétaires : [grandes, moyennes, mineures]
+  saturn:[57,43.5,30], jupiter:[79,45.5,12], mars:[66,40.5,15], sun:[120,69.5,19],
+  venus:[82,45,8], mercury:[76,48,20], moon:[108,66.5,25] };
+
+// --- coordonnées équatoriales de la date (géocentriques) ---
+function eqOfDate(body, date){ const v=A.GeoVector(A.Body[body],date,true); return A.EquatorFromVector(A.RotateVector(A.Rotation_EQJ_EQD(date),v)); }
+function declOf(body, date){ return eqOfDate(body,date).dec; }                     // déclinaison (°)
+function raDeg(body, date){ return n360(eqOfDate(body,date).ra*15); }              // ascension droite (°)
+// précession d'une étoile (RA/Dec J2000 -> équateur de date)
+function precessStar(ra, dec, date){
+  const raR=ra*D2R, decR=dec*D2R;
+  const vec={ x:Math.cos(decR)*Math.cos(raR), y:Math.cos(decR)*Math.sin(raR), z:Math.sin(decR), t:A.MakeTime(date) };
+  const e=A.RotateVector(A.Rotation_EQJ_EQD(date),vec); const q=A.EquatorFromVector(e); return { ra:q.ra*15, dec:q.dec };
+}
+
+// --- Synastrie : aspects croisés, réceptions croisées, contacts aux angles ---
+function synastry(A2, B){
+  const aspects=[];
+  A2.planets.forEach(pa=> B.planets.forEach(pb=>{ const d=sep(pa.lon,pb.lon);
+    for(const asp of ASPECTS){ if(Math.abs(d-asp.deg)<=MOIETY[pa.key]+MOIETY[pb.key]){
+      aspects.push({a:pa,b:pb,asp,orb:Math.abs(d-asp.deg),fam:aspectFamily(pa.key,pb.key,asp),applying:false}); break; } } }));
+  aspects.sort((x,y)=>x.orb-y.orb);
+  const receptions=[];
+  A2.planets.forEach(pa=> B.planets.forEach(pb=>{ const r=receptionsOf(pa,pb,A2.day); if(r.length) receptions.push({host:pa,guest:pb,sens:'A reçoit B',kinds:r.map(k=>DIGN_FR[k])}); }));
+  B.planets.forEach(pb=> A2.planets.forEach(pa=>{ const r=receptionsOf(pb,pa,B.day); if(r.length) receptions.push({host:pb,guest:pa,sens:'B reçoit A',kinds:r.map(k=>DIGN_FR[k])}); }));
+  const angleHits=[];
+  const A2ang=[{nom:'Asc',lon:A2.asc},{nom:'MC',lon:A2.mc}], Bang=[{nom:'Asc',lon:B.asc},{nom:'MC',lon:B.mc}];
+  A2.planets.forEach(p=> Bang.forEach(ag=>{ const d=sep(p.lon,ag.lon); for(const asp of ASPECTS){ if(Math.abs(d-asp.deg)<=MOIETY[p.key]){ angleHits.push({dir:'A→B', planet:p, angle:ag.nom, asp, orb:Math.abs(d-asp.deg)}); break; } } }));
+  B.planets.forEach(p=> A2ang.forEach(ag=>{ const d=sep(p.lon,ag.lon); for(const asp of ASPECTS){ if(Math.abs(d-asp.deg)<=MOIETY[p.key]){ angleHits.push({dir:'B→A', planet:p, angle:ag.nom, asp, orb:Math.abs(d-asp.deg)}); break; } } }));
+  return { aspects, receptions, angleHits };
+}
+
+// --- Lots traditionnels supplémentaires (formules transparentes, inversées de nuit) ---
+function moreLots(chart){
+  const P=k=>chart.planets.find(p=>p.key===k).lon, asc=chart.asc, day=chart.day;
+  const fortune=chart.lots[0].lon, spirit=chart.lots[1].lon;
+  const L=(nom,g,aDay,bDay, formuleJ, formuleN)=>{ const lon = day ? n360(asc+aDay-bDay) : n360(asc+bDay-aDay);
+    return { nom, g, lon, formule: day?formuleJ:formuleN }; };
+  return [
+    L('Lot de Némésis','⊖', fortune, P('saturn'), 'Asc + Fortune − Saturne', 'Asc + Saturne − Fortune'),
+    L('Lot du Père','♅', P('sun'), P('saturn'), 'Asc + Soleil − Saturne', 'Asc + Saturne − Soleil'),
+    L('Lot de la Mère','♆', P('venus'), P('moon'), 'Asc + Vénus − Lune', 'Asc + Lune − Vénus'),
+    L('Lot des Frères','♇', P('jupiter'), P('saturn'), 'Asc + Jupiter − Saturne', 'Asc + Saturne − Jupiter'),
+    L('Lot du Mariage','⚭', P('venus'), P('saturn'), 'Asc + Vénus − Saturne', 'Asc + Saturne − Vénus'),
+    L('Lot de la Maladie','☤', P('mars'), P('saturn'), 'Asc + Mars − Saturne', 'Asc + Saturne − Mars'),
+  ];
+}
+
+// --- Libération zodiacale (Zodiacal Releasing, Valens) depuis un Lot ---
+function zrSign(start, i){ return ((start + i + 6*Math.floor(i/12)) % 12 + 12) % 12; } // loosing of the bond /12
+function zodiacalReleasing(lotLon, birthDate, atDate){
+  const startSign=Math.floor(n360(lotLon)/30);
+  const YEAR=365.2422, MONTH=YEAR/12, ageDays=(atDate-birthDate)/86400000;
+  function level(unit, fromSign, totalDays, originDay){
+    const periods=[]; let t=originDay, i=0;
+    while(t < originDay+totalDays-1e-6 && i<600){ const s=zrSign(fromSign,i); const len=MINOR_YEARS[s]*unit;
+      periods.push({ sign:s, start:t, end:Math.min(t+len, originDay+totalDays), lb:(i>0&&i%12===0) }); t+=len; i++; }
+    return periods;
+  }
+  const peak=s=>[0,3,6,9].includes(((s-startSign)%12+12)%12);
+  const L1=level(YEAR, startSign, 110*YEAR, 0);
+  const c1=L1.find(p=>ageDays>=p.start&&ageDays<p.end)||L1[L1.length-1];
+  const L2=level(MONTH, c1.sign, c1.end-c1.start, c1.start);
+  const c2=L2.find(p=>ageDays>=p.start&&ageDays<p.end)||L2[L2.length-1];
+  const L3=level(1, c2.sign, c2.end-c2.start, c2.start);
+  const c3=L3.find(p=>ageDays>=p.start&&ageDays<p.end)||L3[L3.length-1];
+  const toDate=d=>new Date(birthDate.getTime()+d*86400000);
+  return { startSign, L1, L2, L3, cur:{L1:c1,L2:c2,L3:c3}, peak, toDate };
+}
+
+// --- Décennies (Valens) : 7 majeures de 129 mois, sous-périodes = années mineures (mois) ---
+function decennials(birthDate, atDate, isDay){
+  const MONTH=365.2422/12, ageM=(atDate-birthDate)/86400000/MONTH;
+  const sect = isDay?'sun':'moon';
+  const order=[]; let idx=CHALDEAN.indexOf(sect);
+  for(let i=0;i<7;i++) order.push(CHALDEAN[(idx+i)%7]);   // majeures : depuis la lumière de secte, ordre chaldéen
+  const majors=[]; let t=0;
+  for(let c=0;c<7;c++) for(const lord of order){ majors.push({lord, start:t, end:t+129}); t+=129; if(majors.length>=7*7) break; }
+  // (cycle complet = 7*129 mois) — on garde une seule révolution pour l'affichage courant
+  const cycle=[]; t=0; for(const lord of order){ const subs=[]; let s=t;
+    const subOrder=[]; let si=order.indexOf(lord); for(let k=0;k<7;k++) subOrder.push(order[(si+k)%7]);
+    for(const sl of subOrder){ const len=LESSER_YEARS[sl]; subs.push({lord:sl, start:s, end:s+len}); s+=len; }
+    cycle.push({lord, start:t, end:t+129, subs}); t+=129; }
+  const total=7*129, a=ageM%total;
+  const major=cycle.find(p=>a>=p.start&&a<p.end)||cycle[cycle.length-1];
+  const minor=major.subs.find(p=>a>=p.start&&a<p.end)||major.subs[major.subs.length-1];
+  const toDate=m=>new Date(birthDate.getTime()+m*MONTH*86400000);
+  return { order, cycle, major, minor, ageMonths:a, toDate };
+}
+
+// --- Antiscia / contre-antiscia + contacts cachés ---
+function antiscion(lon){ return n360(180-lon); }
+function contraAntiscion(lon){ return n360(360-lon); }
+function antisciaContacts(chart, orb){
+  orb=orb||1; const res=[];
+  for(const a of chart.planets) for(const b of chart.planets){ if(a.key===b.key) continue;
+    if(sep(antiscion(a.lon), b.lon)<=orb) res.push({type:'antiscion', a, b, orb:sep(antiscion(a.lon),b.lon)});
+  }
+  // dédoublonner (a-b == b-a pour antiscia)
+  const seen=new Set(), out=[];
+  res.forEach(r=>{ const k=[r.a.key,r.b.key].sort().join('-')+r.type; if(!seen.has(k)){ seen.add(k); out.push(r); } });
+  const contra=[];
+  for(const a of chart.planets) for(const b of chart.planets){ if(a.key>=b.key) continue;
+    if(sep(contraAntiscion(a.lon), b.lon)<=orb) contra.push({type:'contra-antiscion', a, b, orb:sep(contraAntiscion(a.lon),b.lon)}); }
+  return { antiscia: out, contra };
+}
+
+// --- Déclinaisons, parallèles, contre-parallèles, hors-limites ---
+function declinations(chart){
+  const eps=chart.eps;
+  const rows=chart.planets.map(p=>{ const dec=declOf(p.body, chart.date); return { key:p.key, nom:p.nom, g:p.g, dec, oob: Math.abs(dec)>eps }; });
+  const aspects=[];
+  for(let i=0;i<rows.length;i++) for(let j=i+1;j<rows.length;j++){ const a=rows[i], b=rows[j], d=Math.abs(a.dec-b.dec);
+    if(d<=1 && Math.sign(a.dec)===Math.sign(b.dec)) aspects.push({a,b,type:'parallèle',orb:d});
+    else if(Math.abs(Math.abs(a.dec)-Math.abs(b.dec))<=1 && Math.sign(a.dec)!==Math.sign(b.dec)) aspects.push({a,b,type:'contre-parallèle',orb:Math.abs(Math.abs(a.dec)-Math.abs(b.dec))}); }
+  return { rows, aspects };
+}
+
+// --- Nœud lunaire VRAI (osculateur) ---
+function trueNode(date){
+  const dt=0.05, toECT=d=>A.RotateVector(A.Rotation_EQJ_ECT(d), A.GeoVector(A.Body.Moon,d,false));
+  const r=toECT(date), r1=toECT(new Date(date.getTime()-dt*86400000)), r2=toECT(new Date(date.getTime()+dt*86400000));
+  const v={x:r2.x-r1.x,y:r2.y-r1.y,z:r2.z-r1.z};
+  const hx=r.y*v.z-r.z*v.y, hy=r.z*v.x-r.x*v.z;
+  return n360(Math.atan2(hx,-hy)*R2D);
+}
+
+// --- Monomoiria (gouvernance par degré) & douzième-partie ---
+function monomoiria(lon){ const sign=Math.floor(lon/30), deg=Math.floor(lon-sign*30);
+  const start=CHALDEAN.indexOf(SIGNS[sign].dom); return CHALDEAN[((start+deg)%7+7)%7]; }
+function dodecatemoria(lon){ const sign=Math.floor(lon/30), d=lon-sign*30; const ds=(sign+Math.floor(d/2.5))%12;
+  return n360(ds*30 + (d%2.5)*12); }
+
+// --- Révolution lunaire (retour de la Lune à son degré natal) ---
+function lunarReturn(natalMoonLon, atDate, lat, lonE){
+  // recherche du dernier retour <= atDate par balayage + bissection
+  function diff(t){ let d=n360(tropLon('Moon',t)-natalMoonLon); if(d>180)d-=360; return d; }
+  let t=new Date(atDate.getTime()), prev=diff(t), found=null;
+  for(let h=0;h<=30*24;h+=3){ const tt=new Date(atDate.getTime()-h*3600000), cur=diff(tt);
+    if(prev!==null && Math.sign(prev)!==Math.sign(cur) && Math.abs(prev)<30 && Math.abs(cur)<30){
+      // bissection entre tt et tt+3h
+      let lo=tt.getTime(), hi=tt.getTime()+3*3600000;
+      for(let k=0;k<40;k++){ const mid=(lo+hi)/2, dm=diff(new Date(mid)); if(Math.sign(dm)===Math.sign(diff(new Date(lo)))) lo=mid; else hi=mid; }
+      found=new Date((lo+hi)/2); break;
+    }
+    prev=cur;
+  }
+  if(!found) return null;
+  return { date:found, chart:buildChart(found, lat, lonE, 'whole') };
+}
+
+// --- Fenêtres de transit (entrée / exact(s) / sortie), triple passages rétrogrades ---
+function transitWindows(natal, fromDate, months){
+  const targets=natal.planets.map(p=>({key:p.key,nom:p.nom,g:p.g,lon:p.lon}))
+    .concat([{key:'asc',nom:'Ascendant',g:'Asc',lon:natal.asc},{key:'mc',nom:'Milieu du Ciel',g:'MC',lon:natal.mc}]);
+  const movers=['mars','jupiter','saturn'], days=Math.round(months*30.44);
+  const ORB=1.0; const open={}, out=[];
+  function off(mk_lon, tlon, ang){ let o1=n360(mk_lon-tlon)-ang; if(o1>180)o1-=360; if(o1<-180)o1+=360;
+    let o2=n360(mk_lon-tlon)-(360-ang); if(o2>180)o2-=360; if(o2<-180)o2+=360; return Math.abs(o1)<Math.abs(o2)?o1:o2; }
+  for(let d=0; d<=days; d++){ const t=new Date(fromDate.getTime()+d*86400000);
+    for(const mk of movers){ const ml=tropLon(PMAP[mk].body,t);
+      targets.forEach(tg=>{ for(const ang of [0,60,90,120,180]){ const id=mk+'_'+tg.key+'_'+ang, o=off(ml,tg.lon,ang), prev=open[id+'_prev'];
+        if(Math.abs(o)<=ORB){ if(!open[id]){ open[id]={enter:t, exacts:[]}; } if(prev!==undefined && Math.sign(prev)!==Math.sign(o)) open[id].exacts.push(t); }
+        else if(open[id]){ out.push({mover:PMAP[mk], target:tg, asp:ASPECTS.find(x=>x.deg===ang), enter:open[id].enter, exacts:open[id].exacts, exit:t}); delete open[id]; }
+        open[id+'_prev']=o;
+      } });
+    }
+  }
+  Object.keys(open).forEach(id=>{ if(id.endsWith('_prev')) return; const w=open[id]; /* fenêtre encore ouverte en fin */ });
+  return out.sort((a,b)=>a.enter-b.enter);
+}
+
+// --- Hyleg & Alcocoden (témoignage de vitalité — JAMAIS durée de vie) ---
+function hyleg(chart){
+  const aphetic=new Set([1,11,10,9,7]);                 // lieux hylégiacaux (Asc, XI, X, IX, VII)
+  const sun=chart.planets.find(p=>p.key==='sun'), moon=chart.planets.find(p=>p.key==='moon');
+  const cands = chart.day ? [sun, moon] : [moon, sun];
+  let hy=null, src='';
+  for(const c of cands){ if(aphetic.has(c.house)){ hy={lon:c.lon, nom:c.nom}; src=c.nom; break; } }
+  if(!hy){ hy={lon:chart.asc, nom:'Ascendant'}; src='Ascendant'; }   // repli : Ascendant
+  const alm=almutenOfDegree(hy.lon, chart.day);
+  const alc=chart.planets.find(p=>p.key===alm.planet);
+  const cond = alc ? (alc.acc.angular==='angulaire'?0 : alc.acc.angular==='succédent'?1 : 2) : 1;
+  const years = alc ? GMY[alc.key][cond] : null;        // angulaire→grandes, succédent→moyennes, cadent→mineures
+  return { hyleg:hy, source:src, alcocoden:alm.planet, alcStr:alc, condition:['grandes','moyennes','mineures'][cond], years };
+}
+
+// --- Astrologie horaire (significateurs + considérations avant jugement) ---
+function horary(chart, quesitedHouse){
+  const ascLord=SIGNS[chart.ascSign].dom;
+  const quesitedSign=Math.floor(chart.cusps[(quesitedHouse-1)%12]/30), quesitedLord=SIGNS[quesitedSign].dom;
+  const querent=chart.planets.find(p=>p.key===ascLord), quesited=chart.planets.find(p=>p.key===quesitedLord);
+  const moon=chart.planets.find(p=>p.key==='moon');
+  const ascDeg=chart.asc-Math.floor(chart.asc/30)*30;
+  const sat=chart.planets.find(p=>p.key==='saturn');
+  const considerations=[];
+  if(ascDeg<3) considerations.push("Ascendant trop précoce (<3°) : il est tôt pour juger l'affaire.");
+  if(ascDeg>27) considerations.push("Ascendant trop tardif (>27°) : l'affaire est déjà ancienne ou échappe au consultant.");
+  if(chart.voc) considerations.push("Lune en course vide : « rien n'en sortira » — l'affaire n'aboutit pas.");
+  if(sat.house===7) considerations.push("Saturne en VII : juge avec prudence (corruption du jugement).");
+  // perfection : aspect applicatif entre querent et quesited
+  let perfection=null;
+  const a=chart.aspects.find(x=>(x.a.key===ascLord&&x.b.key===quesitedLord)||(x.a.key===quesitedLord&&x.b.key===ascLord));
+  if(a) perfection={asp:a.asp, applying:a.applying, orb:a.orb};
+  return { ascLord, quesitedLord, querent, quesited, moon, considerations, perfection, quesitedHouse };
+}
+
+// --- Directions primaires (v1 « in zodiaco », clé de Naibod, aux angles Asc & MC) ---
+function raDecl(lon, eps){ const l=lon*D2R, e=eps*D2R; return { ra:n360(Math.atan2(Math.sin(l)*Math.cos(e),Math.cos(l))*R2D), dec:Math.asin(Math.sin(e)*Math.sin(l))*R2D }; }
+function obliqueAsc(lon, eps, lat){ const {ra,dec}=raDecl(lon,eps); let x=Math.tan(lat*D2R)*Math.tan(dec*D2R); x=Math.max(-0.9999,Math.min(0.9999,x)); return n360(ra - Math.asin(x)*R2D); }
+function primaryDirections(chart){
+  const eps=chart.eps, lat=chart.lat, NAIBOD=1/0.985647;
+  const ascOA=obliqueAsc(chart.asc,eps,lat), mcRA=raDecl(chart.mc,eps).ra, res=[];
+  chart.planets.forEach(p=>{ for(const ang of [0,60,90,120,180]){ for(const a of (ang===0?[0]:[ang,360-ang])){
+    const prom=n360(p.lon-a);
+    let arcA=obliqueAsc(prom,eps,lat)-ascOA; arcA=((arcA%360)+360)%360; if(arcA>180)arcA-=360;
+    if(arcA>=0 && arcA<=95) res.push({prom:p, sig:'Ascendant', asp:ASPECTS.find(x=>x.deg===ang), arc:arcA, years:arcA*NAIBOD});
+    let arcM=raDecl(prom,eps).ra-mcRA; arcM=((arcM%360)+360)%360; if(arcM>180)arcM-=360;
+    if(arcM>=0 && arcM<=95) res.push({prom:p, sig:'Milieu du Ciel', asp:ASPECTS.find(x=>x.deg===ang), arc:arcM, years:arcM*NAIBOD});
+  } } });
+  return res.sort((a,b)=>a.years-b.years);
+}
+// --- Distributions par les bornes (direction de l'Asc à travers les termes, clé de Naibod) ---
+function distributions(chart, atDate, birthDate){
+  const eps=chart.eps, lat=chart.lat, NAIBOD=1/0.985647, ascOA=obliqueAsc(chart.asc,eps,lat);
+  const res=[]; let lon=chart.asc;
+  for(let k=0;k<24;k++){ const sign=Math.floor(lon/30), deg=lon-sign*30; let nb=null;
+    for(const [r,up] of BOUNDS[sign]) if(up>deg+1e-9){ nb={ruler:r, end:sign*30+up}; break; }
+    if(!nb){ lon=n360((sign+1)*30); continue; }
+    let arc=obliqueAsc(n360(nb.end),eps,lat)-ascOA; arc=((arc%360)+360)%360;
+    const yrs=arc*NAIBOD; res.push({ distributor:nb.ruler, untilYears:yrs, boundEnd:nb.end });
+    lon=n360(nb.end); if(yrs>100) break;
+  }
+  let age=null, current=null;
+  if(birthDate&&atDate){ age=(atDate-birthDate)/(365.2422*86400000); current=res.find(r=>r.untilYears>age)||null; }
+  return { periods:res, age, current };
+}
+// --- Parans d'étoiles fixes (v1, positions de l'instant natal ; orbe en longitude sidérale) ---
+function angleLSTs(raDeg_, decDeg, lat){ let x=Math.tan(lat*D2R)*Math.tan(decDeg*D2R); const circ=Math.abs(x)>=1; x=Math.max(-0.9999,Math.min(0.9999,x)); const ad=Math.asin(x)*R2D;
+  return { MC:n360(raDeg_), IC:n360(raDeg_+180), ASC:n360(raDeg_-ad), DESC:n360(raDeg_+ad+180), circ }; }
+function parans(chart, orbDeg){
+  orbDeg=orbDeg||1.5; const lat=chart.lat, res=[];
+  const bodies=chart.planets.map(p=>({ nom:p.nom, g:p.g, key:p.key, ra:raDeg(p.body,chart.date), dec:declOf(p.body,chart.date) }));
+  const stars=STARS.map(s=>{ const q=precessStar(s.ra,s.dec,chart.date); return { nom:s.nom, nat:s.nat, note:s.note, ra:q.ra, dec:q.dec }; });
+  const ANG=['MC','IC','ASC','DESC'];
+  bodies.forEach(b=>{ const ba=angleLSTs(b.ra,b.dec,lat); stars.forEach(s=>{ const sa=angleLSTs(s.ra,s.dec,lat);
+    ANG.forEach(a1=> ANG.forEach(a2=>{ if(ba.circ||sa.circ) return; const d=sep(ba[a1], sa[a2]);
+      if(d<=orbDeg) res.push({ planet:b, star:s, angleP:a1, angleS:a2, orb:d }); })); }); });
+  return res.sort((a,b)=>a.orb-b.orb);
+}
+// --- Électionnel : balayage d'une plage, score des conditions traditionnelles ---
+function electional(fromDate, toDate, lat, lonE, stepMin){
+  stepMin=stepMin||60; const out=[];
+  for(let t=fromDate.getTime(); t<=toDate.getTime(); t+=stepMin*60000){ const d=new Date(t);
+    const c=buildChart(d, lat, lonE, 'whole');
+    const moon=c.planets.find(p=>p.key==='moon'), ascLord=c.planets.find(p=>p.key===SIGNS[c.ascSign].dom);
+    let s=0; const notes=[];
+    if(!c.voc){ s+=2; } else notes.push('Lune VOC');
+    if(c.phase.waxing){ s+=1; }
+    s+=Math.max(0,moon.dig.score)*0.5; if(moon.dig.score<0) notes.push('Lune débile');
+    if(moon.solar==='combuste'){ s-=3; notes.push('Lune combuste'); }
+    s+=Math.max(0,ascLord.dig.score)*0.4;
+    // maléfiques aux angles = malus
+    c.planets.forEach(p=>{ if((p.key==='mars'||p.key==='saturn') && [1,10,7,4].includes(p.house) && p.dig.score<0){ s-=1.5; } });
+    out.push({ date:d, score:Math.round(s*10)/10, notes });
+  }
+  return out.sort((a,b)=>b.score-a.score);
+}
+
 /* --------------------------- Utilitaires -------------------------- */
 function fmtLon(lon){
   if (!Number.isFinite(lon)) return { deg:NaN, min:NaN, sign:0, signNom:'?', signG:'?', txt:'—', short:'—' };
@@ -686,5 +959,8 @@ function fmtLon(lon){
 return { SIGNS, PLANETS, PMAP, ASPECTS, ROMAN, JOURS, MANSIONS, STARS, EXALT, TRIPL, BOUNDS, FACE_ORDER,
          n360, sep, fmtLon, tropLon, obliq, ascLon, mcLon, dignities, almutenOfDegree,
          buildChart, planetaryHour, moonPhase, weekdayBxl, angularType, boundRuler, faceRuler,
-         dominants, balances, configurations, profections, firdaria, solarReturn, transitsForecast };
+         dominants, balances, configurations, profections, firdaria, solarReturn, transitsForecast,
+         synastry, moreLots, zodiacalReleasing, decennials, antiscion, contraAntiscion, antisciaContacts,
+         declinations, declOf, trueNode, monomoiria, dodecatemoria, lunarReturn, transitWindows,
+         hyleg, horary, primaryDirections, distributions, parans, electional, CHALDEAN, GMY };
 });
