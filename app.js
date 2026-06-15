@@ -913,7 +913,9 @@ function initInteractivity(){
   // liens encyclopédie + boutons « voir dans votre thème »
   document.addEventListener('click',e=>{
     const lx=e.target.closest('[data-lex]'); if(lx){ e.preventDefault(); setTab('apprendre'); const sh=document.getElementById('sheet-apprendre'); if(sh){ activateSub(sh,'appr-lexique'); flash(document.getElementById('lex-'+lx.dataset.lex)); } return; }
-    const sv=e.target.closest('[data-see]'); if(sv){ e.preventDefault(); const sub=sv.dataset.see; setTab('natal'); const sh=document.getElementById('sheet-natal'); if(sh){ activateSub(sh,sub); const el=document.getElementById(sub); if(el) el.scrollIntoView({behavior:reduce?'auto':'smooth',block:'start'}); } }
+    const sv=e.target.closest('[data-see]'); if(sv){ e.preventDefault(); const sub=sv.dataset.see;
+      const tab={natal:'natal',mond:'mondiale',appr:'apprendre',ciel:'ciel'}[sub.split('-')[0]]||'natal';
+      setTab(tab); const sh=document.getElementById('sheet-'+tab); if(sh){ activateSub(sh,sub); const el=document.getElementById(sub); if(el) el.scrollIntoView({behavior:reduce?'auto':'smooth',block:'start'}); } }
   });
 }
 

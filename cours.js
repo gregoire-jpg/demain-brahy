@@ -123,6 +123,24 @@ const lexique = [
     def:`Carte dressée au moment où un astre revient à son degré natal : <b>révolution solaire</b> (chaque anniversaire — carte de l'année), <b>révolution lunaire</b> (chaque mois). Cadre l'année ou le mois à venir.` },
   { key:'directions', terme:'Directions primaires', cat:'Prévision',
     def:`La plus ancienne technique de timing : on « dirige » les points du thème par le mouvement diurne du ciel (clé ≈ 1° = 1 an). Quand un astre atteint un angle ou un aspect, l'événement mûrit. Exigeante et prestigieuse.` },
+  { key:'profmensuelle', terme:'Profection mensuelle & quotidienne', cat:'Prévision',
+    def:`Affinage de la <a class="lex" data-lex="profections">profection annuelle</a> : à l'intérieur de l'année, l'Ascendant profecté avance encore d'un signe par mois (et d'un par ~2,5 jours), désignant un seigneur du mois et du jour.` },
+
+  // --- Mondiale & boursière ---
+  { key:'mondiale', terme:'Astrologie mondiale', cat:'Mondiale & boursière',
+    def:`L'astrologie des collectivités (nations, villes, époques) plutôt que des individus. Elle lit les <a class="lex" data-lex="ingres">ingrès</a>, <a class="lex" data-lex="lunaison">lunaisons</a>, <a class="lex" data-lex="eclipse">éclipses</a> et <a class="lex" data-lex="mutation">grandes conjonctions</a>. Brahy en fut un maître reconnu.` },
+  { key:'ingres', terme:'Ingrès solaire', cat:'Mondiale & boursière',
+    def:`Entrée du Soleil dans un signe cardinal (surtout 0° Bélier, l'équinoxe de printemps). La carte dressée à cet instant pour une capitale est l'<b>horoscope de l'année</b> du pays — son climat, ses tensions, son maître.` },
+  { key:'lunaison', terme:'Lunaisons', cat:'Mondiale & boursière',
+    def:`Nouvelles et pleines lunes. La nouvelle lune sème (un cycle d'un mois), la pleine lune récolte et révèle. En mondial, la lunaison qui précède un événement en colore le climat.` },
+  { key:'eclipse', terme:'Éclipses', cat:'Mondiale & boursière',
+    def:`Lunaisons puissantes alignées sur les <a class="lex" data-lex="noeuds">nœuds</a>. Solaire : un changement de tête, un nouveau départ ; lunaire : un aboutissement, une révélation publique. Le signe touché indique le domaine accentué pour ~6 mois.` },
+  { key:'mutation', terme:'Grande conjonction & mutation', cat:'Mondiale & boursière',
+    def:`Conjonction Jupiter–Saturne, tous les ~20 ans : elle ouvre un chapitre historique. Tous les ~200 ans elle change d'<a class="lex" data-lex="elements">élément</a> (la « grande mutation ») et marque un tournant de civilisation — la série d'Air a débuté en 2020.` },
+  { key:'boursiere', terme:'Astrologie boursière', cat:'Mondiale & boursière',
+    def:`Spécialité de Brahy : corréler les configurations célestes — surtout les <a class="lex" data-lex="tensions">aspects durs</a> — aux fluctuations des marchés. Outil d'étude historique et heuristique, jamais un conseil financier.` },
+  { key:'barometre', terme:'Baromètre des aspects', cat:'Mondiale & boursière',
+    def:`Synthèse de la « pression » céleste du jour : aspects durs (Saturne, Mars) = tension, repli ; aspects doux (Jupiter, Vénus) = confiance, reprise. Une jauge à lire comme une tendance d'ambiance, non comme une prévision.` },
 
   // --- Avancé ---
   { key:'antiscia', terme:'Antiscia', cat:'Avancé',
@@ -227,6 +245,26 @@ const cours = [
       `<p>L'astrologie ne sert pas qu'à décrire une naissance. L'<a class="lex" data-lex="horaire">astrologie horaire</a> répond à une question précise par le thème de l'instant où elle est posée ; l'<a class="lex" data-lex="electionnel">astrologie électionnelle</a> choisit le meilleur moment pour agir. Ce sont des arts traditionnels à part entière.</p>` },
     { id:'5-4', titre:'Hyleg, alcocoden et prudence', html:
       `<p>Les anciens jugeaient la vitalité par le <a class="lex" data-lex="hyleg">hyleg</a> (donneur de vie) et son maître, l'alcocoden. DEMAIN les présente comme un <b>témoignage symbolique de robustesse</b> — jamais comme une prédiction de durée de vie. L'astrologie éclaire des tendances ; elle « incline, mais ne contraint point ».</p>` },
+    { id:'5-5', titre:'Monomoiria & douzième-partie', html:
+      `<p>Pour les plus exigeants : la <a class="lex" data-lex="dignites">gouvernance</a> descend jusqu'au degré. La <b>monomoiria</b> attribue un maître à chaque degré ; la <b>douzième-partie</b> (dodécatémorie) projette un degré dans un micro-signe, révélant une « sous-position » du point. Couches savantes, marqueurs de sérieux.</p>
+      ${see('natal-avance','Voir l\'onglet Avancé')}` },
+  ]},
+  { niveau:6, titre:'Niveau 6 — Astrologie mondiale & boursière', lecons:[
+    { id:'6-1', titre:'Qu\'est-ce que l\'astrologie mondiale ?', html:
+      `<p>L'<a class="lex" data-lex="mondiale">astrologie mondiale</a> (ou mondaine) ne regarde plus l'individu mais les <b>collectivités</b> : nations, villes, économies, époques. Elle fut le grand domaine de Brahy. On n'y lit pas une naissance unique mais des <b>cartes du ciel collectives</b> : ingrès des saisons, lunaisons, éclipses, et le lent battement des planètes lentes.</p>
+      ${see('mond-monde','Voir le ciel mondial')}` },
+    { id:'6-2', titre:'Ingrès, lunaisons et éclipses', html:
+      `<p>Trois horloges du monde. L'<a class="lex" data-lex="ingres">ingrès du Bélier</a> (équinoxe de printemps) dresse l'<b>horoscope de l'année</b> d'un pays : son Ascendant et son maître donnent le climat des douze mois. Les <a class="lex" data-lex="lunaison">lunaisons</a> rythment les mois. Les <a class="lex" data-lex="eclipse">éclipses</a>, enfin, ouvrent des cycles de six mois et frappent le signe qu'elles touchent.</p>
+      ${see('mond-cycles','Voir les cycles & éclipses')}` },
+    { id:'6-3', titre:'Les grandes conjonctions et les âges du monde', html:
+      `<p>Le cycle-roi de l'astrologie mondiale est la <a class="lex" data-lex="mutation">grande conjonction</a> de Jupiter et Saturne, tous les ~20 ans : elle scande l'histoire politique et économique. Tous les ~200 ans, elle change d'<a class="lex" data-lex="elements">élément</a> — la « grande mutation », véritable changement d'ère. Nous sommes entrés dans la série d'<b>Air</b> en 2020 (réseaux, information, finance dématérialisée).</p>
+      ${see('mond-cycles','Voir la grande conjonction')}` },
+    { id:'6-4', titre:'L\'astrologie boursière de Brahy', html:
+      `<p>Gustave‑Lambert Brahy, expert‑comptable devenu astrologue, fut un <b>pionnier de l'<a class="lex" data-lex="boursiere">astrologie boursière</a></b>. Il corrélait les <a class="lex" data-lex="tensions">aspects durs</a> entre planètes aux retournements des marchés : Saturne pour les contractions, Jupiter pour les expansions, Mars pour la volatilité. Sa revue <i>Demain</i> publiait des prévisions économiques suivies dans toute l'Europe.</p>
+      <p class="sm">Note : DEMAIN en propose une lecture <b>historique et heuristique</b>, fidèle à son esprit — jamais un conseil financier.</p>` },
+    { id:'6-5', titre:'Lire le baromètre et les dates sensibles', html:
+      `<p>Le <a class="lex" data-lex="barometre">baromètre</a> agrège la « pression » céleste du jour : dominante d'aspects durs = climat tendu (prudence) ; d'aspects doux = climat porteur (confiance). Les <b>dates sensibles</b> sont les jours où un aspect majeur se perfectionne exactement — les « nœuds » du calendrier que Brahy surveillait. On les lit comme des <b>fenêtres d'ambiance</b>, à croiser avec le réel.</p>
+      ${see('mond-boursiere','Voir le baromètre boursier')}` },
   ]},
 ];
 
