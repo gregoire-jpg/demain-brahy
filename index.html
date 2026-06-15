@@ -42,6 +42,7 @@
   <nav class="onglets" role="tablist" aria-label="Sections">
     <button class="onglet" id="tab-ciel" role="tab" aria-selected="true" aria-controls="vue-ciel">Le ciel du moment</button>
     <button class="onglet" id="tab-natal" role="tab" aria-selected="false" aria-controls="vue-natal">Thème de nativité</button>
+    <button class="onglet" id="tab-synastrie" role="tab" aria-selected="false" aria-controls="vue-synastrie">Synastrie</button>
     <button class="onglet" id="tab-mondiale" role="tab" aria-selected="false" aria-controls="vue-mondiale">Mondiale &amp; boursière</button>
     <button class="onglet" id="tab-apprendre" role="tab" aria-selected="false" aria-controls="vue-apprendre">Apprendre</button>
   </nav>
@@ -146,6 +147,19 @@
         <div class="exports"><button class="btn-sec" type="button" data-png="fig-natal">Image PNG</button><button class="btn-sec" type="button" onclick="window.print()">Imprimer / PDF</button></div>
       </aside>
       <div class="sheet" id="sheet-natal"></div>
+    </div>
+  </section>
+
+  <!-- ===================== SYNASTRIE ===================== -->
+  <section class="panneau" id="vue-synastrie" role="tabpanel" aria-labelledby="tab-synastrie" hidden>
+    <div id="syn-controls"></div>
+    <div class="cockpit">
+      <aside class="figcol">
+        <svg class="figure" id="fig-syn" viewBox="-24 -24 448 448" aria-label="Bi-roue de synastrie"></svg>
+        <div class="asp-legende"><span class="lh">Harmonie</span><span class="lt">Tension</span><span class="ln">Conjonction</span></div>
+        <p class="fig-leg">Anneau intérieur : thème A &middot; anneau extérieur : thème B. Traits au centre : aspects croisés.</p>
+      </aside>
+      <div class="sheet" id="sheet-synastrie"></div>
     </div>
   </section>
 

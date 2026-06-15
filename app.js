@@ -624,6 +624,69 @@ function activateSub(sheetEl, subId){
   sheetEl.querySelectorAll('.subpanel').forEach(p=>{ p.hidden = (p.dataset.sub!==subId); });
 }
 
+/* --------------------------- Synastrie --------------------------- */
+function getThemes(){ try{ return JSON.parse(localStorage.getItem('demain_themes')||'[]'); }catch(e){ return []; } }
+function currentNatalTheme(){ const g=id=>(document.getElementById(id)||{}).value; return { nom:'(thème courant)', lieu:g('n-lieu'), date:g('n-date'), heure:g('n-heure'), tz:g('n-tz'), lat:g('n-lat'), lon:g('n-lon') }; }
+function themeToChart(t){ const [Y,Mo,Da]=t.date.split('-').map(Number), [H,Mi]=(t.heure||'12:00').split(':').map(Number);
+  const d=wallToDate(t.tz||'Europe/Brussels',Y,Mo,Da,H,Mi); return { chart:E.buildChart(d, parseFloat(t.lat), parseFloat(t.lon), 'whole'), nom:t.nom||t.lieu||'Thème' }; }
+function pickTheme(v){ return v==='cur' ? currentNatalTheme() : getThemes()[+v]; }
+
+function drawBiWheel(svg, A, B){
+  svg.setAttribute('viewBox','-24 -24 448 448'); svg.setAttribute('role','img'); svg.setAttribute('aria-label','Bi-roue de synastrie');
+  const cx=200,cy=200,asc=A.asc, Rout=196,Rz=164,Rb=146,Ra=120,Rasp=100, F=n=>n.toFixed(1);
+  let h=`<circle class="w-ring" cx="${cx}" cy="${cy}" r="${Rout}"/><circle class="w-ring" cx="${cx}" cy="${cy}" r="${Rz}"/><circle class="w-ring" cx="${cx}" cy="${cy}" r="${Rasp}"/><circle class="w-ring2" cx="${cx}" cy="${cy}" r="${(Ra+Rb)/2}"/>`;
+  for(let s=0;s<12;s++){ const a0=sAng(s*30,asc),c1=polar(cx,cy,Rz,a0),c2=polar(cx,cy,Rout,a0);
+    h+=`<line class="w-zod" x1="${F(c1[0])}" y1="${F(c1[1])}" x2="${F(c2[0])}" y2="${F(c2[1])}"/>`;
+    const gm=polar(cx,cy,(Rout+Rz)/2,sAng(s*30+15,asc)); h+=`<text class="w-sign" x="${F(gm[0])}" y="${F(gm[1]+5)}" text-anchor="middle">${SIGNS[s].g}</text>`; }
+  for(let i=0;i<12;i++){ const a=sAng(A.cusps[i],asc),c1=polar(cx,cy,Rasp,a),c2=polar(cx,cy,Rz,a), ang=[0,3,6,9].includes(i);
+    h+=`<line class="${ang?'w-axis':'w-cusp'}" x1="${F(c1[0])}" y1="${F(c1[1])}" x2="${F(c2[0])}" y2="${F(c2[1])}"/>`; }
+  E.synastry(A,B).aspects.forEach(x=>{ const p1=polar(cx,cy,Rasp,sAng(x.a.lon,asc)),p2=polar(cx,cy,Rasp,sAng(x.b.lon,asc)), cl=x.fam==='harmon'?'w-asp-h':x.fam==='tendu'?'w-asp-t':'w-asp-n';
+    h+=`<line class="w-asp ${cl}" x1="${F(p1[0])}" y1="${F(p1[1])}" x2="${F(p2[0])}" y2="${F(p2[1])}"/>`; });
+  function placeSet(planets,R,cls,tag){ const items=planets.map(p=>({p,ang:sAng(p.lon,asc)})).sort((u,v)=>u.ang-v.ang);
+    for(let i=1;i<items.length;i++) if(items[i].ang-items[i-1].ang<9) items[i].ang=items[i-1].ang+9;
+    items.forEach(o=>{ const ta=sAng(o.p.lon,asc),ga=o.ang, s1=polar(cx,cy,Rz,ta),s2=polar(cx,cy,R+7,ga);
+      h+=`<line class="w-stem" x1="${F(s1[0])}" y1="${F(s1[1])}" x2="${F(s2[0])}" y2="${F(s2[1])}"/>`;
+      const gp=polar(cx,cy,R,ga); h+=`<text class="${cls}" x="${F(gp[0])}" y="${F(gp[1]+6)}" text-anchor="middle" data-bulle="${esc(tag+' — '+o.p.nom+' '+fmtLon(o.p.lon).txt)}">${o.p.g}</text>`; }); }
+  placeSet(B.planets, Rb, 'w-pl w-syn-b', 'B'); placeSet(A.planets, Ra, 'w-pl w-syn-a', 'A');
+  h+=`<circle class="w-hub" cx="${cx}" cy="${cy}" r="2"/>`; svg.innerHTML=h;
+}
+function panelSynastry(A,B,syn){
+  const harm=syn.aspects.filter(a=>a.fam==='harmon').length, tens=syn.aspects.filter(a=>a.fam==='tendu').length;
+  const lum=['sun','moon'], lumLinks=syn.aspects.filter(a=>lum.includes(a.a.key)&&lum.includes(a.b.key));
+  const vm=syn.aspects.filter(a=>(a.a.key==='venus'&&a.b.key==='mars')||(a.a.key==='mars'&&a.b.key==='venus'));
+  let r=`<div class="fiche"><div class="fi"><span>Aspects croisés</span><b>${syn.aspects.length}</b></div><div class="fi"><span>Harmonie</span><b>${harm}</b></div><div class="fi"><span>Tension</span><b>${tens}</b></div><div class="fi"><span>Réceptions</span><b>${syn.receptions.length}</b></div></div>`;
+  r+=`<h4>Synthèse — ${esc(A.nom)} (A) & ${esc(B.nom)} (B)</h4>`;
+  r+=`<p>La comparaison révèle <b>${syn.aspects.length}</b> contacts entre les deux thèmes (${harm} d'harmonie, ${tens} de tension). ${lumLinks.length?'<b>Contact entre luminaires</b> : un lien de fond profond. ':''}${vm.length?'<b>Contact Vénus–Mars</b> : attraction. ':''}${syn.receptions.length?'Des <b>réceptions mutuelles</b> indiquent une coopération naturelle entre les deux. ':''}Lecture traditionnelle : on regarde d'abord les contacts aux <b>luminaires</b>, au <b>maître d'ascendant</b> et aux <b>angles</b>.</p>`;
+  r+=`<h4>Aspects croisés</h4><ul class="liste">`;
+  syn.aspects.slice(0,28).forEach(a=>{ const cl=a.fam==='harmon'?'asp-h':a.fam==='tendu'?'asp-t':'asp-n';
+    r+=`<li><span class="g">${a.a.g} ${a.asp.g} ${a.b.g}</span> <b>${a.a.nom}</b> de A ${a.asp.nom} <b>${a.b.nom}</b> de B <span class="${cl}">(orbe ${a.orb.toFixed(1)}°)</span></li>`; });
+  r+=`</ul>`;
+  if(syn.receptions.length){ r+=`<h4>Réceptions croisées</h4><ul class="liste">`; syn.receptions.slice(0,14).forEach(x=>r+=`<li><b>${x.host.nom}</b> ${x.sens} : reçoit <b>${x.guest.nom}</b> par ${x.kinds.join(', ')}</li>`); r+=`</ul>`; }
+  if(syn.angleHits.length){ r+=`<h4>Contacts aux angles</h4><ul class="liste">`; syn.angleHits.slice(0,14).forEach(x=>{ const cl=x.asp.fam==='harmon'?'asp-h':x.asp.fam==='tendu'?'asp-t':'asp-n'; r+=`<li><span class="g">${x.planet.g} ${x.asp.g}</span> <b>${x.planet.nom}</b> (${x.dir}) ${x.asp.nom} <b>${x.angle}</b> <span class="${cl}">(orbe ${x.orb.toFixed(1)}°)</span></li>`; }); r+=`</ul>`; }
+  return r;
+}
+function renderSynastrie(){
+  const themes=getThemes();
+  const opt=()=>['<option value="cur">(thème courant du formulaire)</option>'].concat(themes.map((t,i)=>`<option value="${i}">${esc(t.nom)}</option>`)).join('');
+  document.getElementById('syn-controls').innerHTML =
+    `<div class="syn-pick"><div class="champ"><label for="syn-a">Thème A (intérieur)</label><select id="syn-a">${opt()}</select></div>`
+    +`<div class="champ"><label for="syn-b">Thème B (extérieur)</label><select id="syn-b">${opt()}</select></div>`
+    +`<button class="btn" type="button" id="syn-go">Comparer</button>`
+    +`<span class="biblio-note">Mémorisez des thèmes dans « Thème de nativité » pour enrichir cette liste.</span></div>`;
+  document.getElementById('syn-go').addEventListener('click', doSyn);
+  if(themes.length>=1) document.getElementById('syn-b').value='0';   // B = 1er thème mémorisé par défaut
+  doSyn();                                                            // résultat affiché d'emblée
+}
+function doSyn(){
+  const res=document.getElementById('sheet-synastrie');
+  const a=pickTheme(document.getElementById('syn-a').value), b=pickTheme(document.getElementById('syn-b').value);
+  if(!a||!a.date||!b||!b.date){ res.innerHTML='<p class="vide">Choisissez deux thèmes valides (avec une date).</p>'; return; }
+  try{ const A=themeToChart(a), B=themeToChart(b), syn=E.synastry(A.chart,B.chart);
+    drawBiWheel(document.getElementById('fig-syn'), A.chart, B.chart);
+    res.innerHTML=panelSynastry(A,B,syn);
+  }catch(e){ console.error(e); res.innerHTML='<p>Erreur : '+esc(e.message)+'</p>'; }
+}
+
 /* --------------------------- Format date ------------------------- */
 function fmtDate(d,tz){ return new Intl.DateTimeFormat('fr-BE',{dateStyle:'long',timeZone:tz||'Europe/Brussels'}).format(d); }
 function fmtTime(d,tz){ return new Intl.DateTimeFormat('fr-BE',{hour:'2-digit',minute:'2-digit',timeZone:tz||'Europe/Brussels'}).format(d); }
@@ -687,8 +750,9 @@ function syncControls(view){
 /* --------------------------- Onglets ----------------------------- */
 let apprRendered=false, mondRendered=false;
 function setTab(which){
-  ['ciel','natal','mondiale','apprendre'].forEach(v=>{ const t=document.getElementById('tab-'+v), s=document.getElementById('vue-'+v);
+  ['ciel','natal','synastrie','mondiale','apprendre'].forEach(v=>{ const t=document.getElementById('tab-'+v), s=document.getElementById('vue-'+v);
     if(t) t.setAttribute('aria-selected', String(v===which)); if(s) s.hidden=(v!==which); });
+  if(which==='synastrie'){ try{ renderSynastrie(); }catch(e){ console.error(e); } }
   if(which==='apprendre' && !apprRendered){ try{ renderApprendre(); }catch(e){ console.error(e); } apprRendered=true; }
   if(which==='mondiale' && !mondRendered){ try{ renderMondiale(); }catch(e){ console.error(e); document.getElementById('sheet-mondiale').innerHTML='<p>Erreur : '+esc(e.message)+'</p>'; } mondRendered=true; }
   if(history.replaceState) history.replaceState(null,'', which==='ciel'?'#':'#'+which);
@@ -866,6 +930,7 @@ function init(){
   document.getElementById('tab-natal').addEventListener('click',()=>setTab('natal'));
   const ta=document.getElementById('tab-apprendre'); if(ta) ta.addEventListener('click',()=>setTab('apprendre'));
   const tm=document.getElementById('tab-mondiale'); if(tm) tm.addEventListener('click',()=>setTab('mondiale'));
+  const ts=document.getElementById('tab-synastrie'); if(ts) ts.addEventListener('click',()=>setTab('synastrie'));
   document.getElementById('form-natal').addEventListener('submit',e=>{e.preventDefault(); renderNatal();});
   document.querySelectorAll('.figbtn').forEach(b=>b.addEventListener('click',()=>{ const v=b.closest('.panneau').id.replace('vue-','');
     if(v==='ciel'){cielFig=b.dataset.mode; if(lastCiel)drawFigure(document.getElementById('fig-ciel'),lastCiel,cielFig);}
@@ -876,7 +941,7 @@ function init(){
   initExtras();
   try{ renderCiel(); }catch(e){ console.error(e); document.getElementById('sheet-ciel').innerHTML='<p>Erreur : '+esc(e.message)+'</p>'; }
   try{ renderNatal(); }catch(e){ console.error(e); }
-  if(location.hash==='#natal') setTab('natal'); else if(location.hash==='#apprendre') setTab('apprendre'); else if(location.hash==='#mondiale') setTab('mondiale');
+  if(location.hash==='#natal') setTab('natal'); else if(location.hash==='#apprendre') setTab('apprendre'); else if(location.hash==='#mondiale') setTab('mondiale'); else if(location.hash==='#synastrie') setTab('synastrie');
   setInterval(()=>{ if(!document.getElementById('vue-ciel').hidden) try{ renderCiel(); }catch(e){} }, 60000);
 }
 if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',init); else init();
