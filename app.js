@@ -259,12 +259,14 @@ function panelDignities(chart){
 
 function panelAspectarian(chart){
   const P=chart.planets;
+  const harm=chart.aspects.filter(a=>a.fam==='harmon').length, tens=chart.aspects.filter(a=>a.fam==='tendu').length, tight=chart.aspects[0];
+  let r=`<p class="lecture"><b>Lecture.</b> ${chart.aspects.length} aspects relient les astres (${harm} d'harmonie, ${tens} de tension) : ${tens>harm?'un thème plutôt <b>dynamique et combatif</b>, qui avance par frictions et par à-coups':harm>tens?'un thème plutôt <b>fluide</b>, où les talents s\'enchaînent avec aisance':'un <b>équilibre</b> entre facilités et frictions'}.${tight?` L'aspect le plus serré — <b>${tight.a.nom} ${tight.asp.nom} ${tight.b.nom}</b> (orbe ${tight.orb.toFixed(1)}°) — est le plus déterminant du caractère.`:''}</p>`;
   const cell=(i,j)=>{ if(i===j) return `<td class="diag g">${P[i].g}</td>`;
     const a=chart.aspects.find(x=>(x.a.key===P[i].key&&x.b.key===P[j].key)||(x.a.key===P[j].key&&x.b.key===P[i].key));
     if(!a) return `<td></td>`;
     const cl=a.fam==='harmon'?'asp-h':a.fam==='tendu'?'asp-t':'asp-n';
     return `<td class="aspc ${cl}" data-bulle="${esc(a.a.nom+' '+a.asp.nom+' '+a.b.nom+'\\n'+ASP_DEF[a.asp.nom]+'\\norbe '+a.orb.toFixed(1)+'°'+(a.applying?' · appliquant':' · séparant'))}"><span class="g">${a.asp.g}</span><small>${a.orb.toFixed(0)}°</small></td>`; };
-  let r=`<table class="grid aspgrid"><caption>Aspectarium</caption>`;
+  r+=`<table class="grid aspgrid"><caption>Aspectarium</caption>`;
   for(let i=0;i<P.length;i++){ r+='<tr>'; for(let j=0;j<=i;j++) r+=cell(i,j); r+='</tr>'; }
   r+=`</table>`;
   // liste détaillée
@@ -333,14 +335,17 @@ function panelLots(chart){
   r+=`<table class="grid" style="margin-top:10px"><caption>Lots traditionnels</caption><tr><th>Lot</th><th>Position</th><th>Maison</th><th>Formule</th></tr>`;
   ml.forEach(l=>{ const f=fmtLon(l.lon), h=((f.sign-chart.ascSign)%12+12)%12+1;
     r+=`<tr><td><span class="g">${l.g}</span> ${l.nom}</td><td class="pos">${f.deg}°${String(f.min).padStart(2,'0')}′ <span class="g">${f.signG}</span></td><td>${ROMAN[h]}</td><td class="sm">${l.formule}</td></tr>`; });
-  return r+`</table>`;
+  r+=`</table>`;
+  const fort=chart.points.find(p=>p.key==='fortune'), spir=chart.points.find(p=>p.key==='spirit');
+  r+=`<p class="lecture"><b>Lecture.</b> La <b>Part de Fortune</b> en ${ROMAN[fort.house]}<sup>e</sup> maison montre où se loge votre bien-être et votre chance matérielle : ${HOUSE_MEAN[fort.house].dom}. La <b>Part de l'Esprit</b> en ${ROMAN[spir.house]}<sup>e</sup> dit où s'exerce le plus votre action volontaire : ${HOUSE_MEAN[spir.house].dom}.</p>`;
+  return r;
 }
 
 function panelStars(chart){
   let r='';
   if(!chart.stars.length) r+=`<p class="vide">Aucune étoile fixe majeure conjointe (orbe 1,5°) à un astre ou à un angle.</p>`;
   else { r+=`<h4>Conjonctions zodiacales</h4><ul class="liste">`;
-    chart.stars.forEach(s=> r+=`<li><b>★ ${s.star.nom}</b> <small>(${s.star.nat}, ${s.star.note})</small> — conjointe à <b>${s.body.nom}</b>, orbe ${s.orb.toFixed(2)}°.</li>`);
+    chart.stars.forEach(s=> r+=`<li><b>★ ${s.star.nom}</b> <small>(${s.star.note})</small> — conjointe à <b>${s.body.nom}</b> (orbe ${s.orb.toFixed(2)}°) : elle teinte ${s.body.nom} de sa nature <b>${s.star.nat}</b>, infléchissant fortement ce point du thème.</li>`);
     r+=`</ul>`; }
   // Parans (méthode Brady) — uniquement pour un thème avec lieu (natal)
   if(chart.lat!=null){ const pa=E.parans(chart, 1.5);
@@ -470,7 +475,8 @@ function panelPrevisions(chart, extra){
   const pr=E.profections(birth, at, chart.ascSign);
   const fd=E.firdaria(birth, at, chart.day);
   const sunLon=chart.planets.find(p=>p.key==='sun').lon;
-  let r='';
+  const lordY=chart.planets.find(p=>p.key===pr.lord);
+  let r=`<p class="chapeau">Où en êtes-vous ? Les techniques traditionnelles ci-dessous situent le « chapitre » de vie en cours. <b>En bref :</b> année de vie ${pr.age}–${pr.age+1} régie par <b>${PMAP[pr.lord].nom}</b> (seigneur de l'année, natal en ${SIGNS[lordY.sign].nom}/maison ${ROMAN[lordY.house]} — ${lordY.dig.label}) ; grande période de firdaria sous <b>${firNom(fd.major.lord)}</b>. Ce sont ces deux maîtres qu'il faut suivre en priorité cette année.</p>`;
   // Profections
   const lordP=chart.planets.find(p=>p.key===pr.lord);
   r+=`<h4>Profection de l'année <small>· technique hellénistique</small></h4>`;
@@ -759,6 +765,36 @@ function setTab(which){
   scrollTo(0,0);
 }
 
+/* --------------------- Interprétations ---------------------------- */
+const ELEM_MUT={ Feu:"le Feu — entreprise, conquête, pouvoir personnel, énergie (et guerres)",
+  Terre:"la Terre — argent matériel, industrie, propriété, ordre concret",
+  Air:"l'Air — idées, réseaux, information, finance dématérialisée, le collectif",
+  Eau:"l'Eau — les masses, l'émotion collective, le religieux, les ressources cachées" };
+const PL_MARKET={ saturn:"contraction et prudence (baisses, restrictions)", jupiter:"expansion et optimisme (hausses, crédit)",
+  mars:"volatilité et à-coups (ruptures brutales)", venus:"confiance et valeurs de plaisir et de luxe",
+  mercury:"échanges et valeurs d'information", sun:"valeurs souveraines (l'or, le ton général)", moon:"l'humeur du public (court terme)" };
+function judgeYear(c){
+  const el=SIGNS[c.ascSign].elem, alm=c.almuten.planet, almP=PMAP[alm];
+  const ben=alm==='jupiter'||alm==='venus', mal=alm==='mars'||alm==='saturn';
+  const angMal=c.planets.filter(p=>(p.key==='mars'||p.key==='saturn')&&[1,10,7,4].includes(p.house));
+  let s=`<b>Lecture de l'année.</b> L'Ascendant en ${SIGNS[c.ascSign].nom} (${el}) donne le climat général, tourné vers ${SIGN_KW[c.ascSign].dom}. Le maître de l'année est <b>${almP.nom}</b> — `;
+  s+= ben?'une année plutôt porteuse et constructive' : mal?'une année exigeante, qui demande prudence, patience et effort' : 'une année au caractère mêlé, à jouer finement';
+  s+='. ';
+  s+= angMal.length ? `${angMal.map(p=>p.nom).join(' et ')} aux angles : tensions marquantes à prévoir dans la vie publique.` : `Aucun maléfique aux angles : pas de crise structurelle annoncée pour la région.`;
+  return s;
+}
+function eclSense(lon, solar){ const sgn=SIGNS[Math.floor(n360(lon)/30)];
+  return `Elle met l'accent sur les affaires de ce signe (${sgn.elem.toLowerCase()}) : ${solar?"un nouveau départ, un changement de tête, une crise de pouvoir":"un aboutissement, une révélation au grand jour, une bascule de l'opinion"}.`; }
+function financialReading(fb){
+  const tense=fb.active.filter(a=>a.fam==='tendu'), harm=fb.active.filter(a=>a.fam==='harmon');
+  let s=`<b>${fb.index>12?'Climat porteur.':fb.index<-12?'Climat tendu.':'Climat indécis.'}</b> `;
+  if(tense.length) s+=`Les configurations dures dominent (${tense.slice(0,3).map(a=>a.a.nom+'–'+a.b.nom).join(', ')}) : Brahy y lisait des phases de nervosité, de correction ou de repli — la prudence s'impose. `;
+  if(harm.length) s+=`Des aspects favorables (${harm.slice(0,3).map(a=>a.a.nom+'–'+a.b.nom).join(', ')}) soutiennent la confiance et les reprises. `;
+  if(!tense.length && !harm.length) s+=`Peu de configurations serrées : marché sans direction céleste nette, dominé par les nouvelles. `;
+  s+=`Selon la doctrine de Brahy, on surveille surtout les aspects de Saturne (${PL_MARKET.saturn}) et de Jupiter (${PL_MARKET.jupiter}), Mars apportant ${PL_MARKET.mars}.`;
+  return s;
+}
+
 /* --------------------- Mondiale & boursière ---------------------- */
 function renderMondiale(){
   const now=new Date();
@@ -770,12 +806,14 @@ function renderMondiale(){
   let monde=`<p class="chapeau">L'astrologie mondiale lit le ciel des nations et des époques — ingrès, lunaisons, éclipses, grandes conjonctions. Dans la tradition de Brahy, qui en fit son métier.</p>`;
   if(ing){ const a=fmtLon(ing.chart.asc), m=fmtLon(ing.chart.mc), mo=ing.chart.planets.find(p=>p.key==='moon');
     monde+=`<h4>Révolution de l'année — ingrès du Bélier <small>· horoscope de l'année (Bruxelles)</small></h4>`;
-    monde+=`<p>Carte dressée à l'entrée du Soleil en Bélier (équinoxe de printemps) le <b>${dd(ing.date)}</b> : Ascendant <b>${a.deg}° ${a.signNom}</b>, Milieu du Ciel <b>${m.deg}° ${m.signNom}</b>, Lune en ${fmtLon(mo.lon).deg}° ${SIGNS[mo.sign].nom}. Maître général (almutén) : <b>${PMAP[ing.chart.almuten.planet].nom}</b>.</p>`; }
+    monde+=`<p>Carte dressée à l'entrée du Soleil en Bélier (équinoxe de printemps) le <b>${dd(ing.date)}</b> : Ascendant <b>${a.deg}° ${a.signNom}</b>, Milieu du Ciel <b>${m.deg}° ${m.signNom}</b>, Lune en ${fmtLon(mo.lon).deg}° ${SIGNS[mo.sign].nom}. Maître général (almutén) : <b>${PMAP[ing.chart.almuten.planet].nom}</b>.</p>`;
+    monde+=`<p>${judgeYear(ing.chart)}</p>`; }
   monde+=`<h4>Le ciel mondial à l'instant</h4>`+panelPositions(sky);
   // Cycles & éclipses
   let cyc=`<h4>Grande conjonction Jupiter–Saturne <small>· la « mutation » des époques (≈ 20 ans)</small></h4>`;
   cyc+=`<p>Dernière : <b>${dd(gc.last.date)}</b> à ${fmtLon(gc.last.lon).deg}° ${SIGNS[gc.last.sign].nom} — élément <b>${gc.last.elem}</b>. Prochaine : <b>${dd(gc.next.date)}</b> à ${fmtLon(gc.next.lon).deg}° ${SIGNS[gc.next.sign].nom} (${gc.next.elem}).</p>`;
-  cyc+=`<p class="sm">Ce cycle rythme l'histoire (économie, pouvoir) ; le changement d'élément — la « grande mutation » — marque un tournant d'époque. La série d'Air actuelle a débuté en 2020.</p>`;
+  cyc+=`<p>La conjonction en cours se tient dans <b>${ELEM_MUT[gc.last.elem]}</b> : c'est la teinte de fond de l'époque (depuis ${dd(gc.last.date)}). La prochaine, en ${SIGNS[gc.next.sign].nom}, ${gc.next.elem===gc.last.elem?'prolonge cette série élémentaire':'ouvrira une nouvelle ère ('+gc.next.elem+')'}.</p>`;
+  cyc+=`<p class="sm">Ce cycle de ~20 ans rythme l'histoire (économie, pouvoir) ; le changement d'élément — la « grande mutation », tous les ~200 ans — marque un tournant de civilisation. La série d'Air a débuté en 2020.</p>`;
   cyc+=`<h4>Saisons (ingrès solaires)</h4><ul class="liste">`+seas.map(s=>`<li><span class="tdate">${dd(s.date)}</span> — ${s.nom}</li>`).join('')+`</ul>`;
   cyc+=`<h4>Lunaisons à venir</h4><ul class="liste">`;
   if(lun.nextNew) cyc+=`<li><span class="tdate">${dd(lun.nextNew.date)}</span> — Nouvelle Lune en ${fmtLon(lun.nextNew.lon).deg}° ${sgn(lun.nextNew.lon)}</li>`;
@@ -784,6 +822,8 @@ function renderMondiale(){
   if(ecl.solar) cyc+=`<li><span class="tdate">${dd(ecl.solar.date)}</span> — éclipse <b>solaire</b> (${ecl.solar.kind}) en ${fmtLon(ecl.solar.lon).deg}° ${sgn(ecl.solar.lon)}</li>`;
   if(ecl.lunar) cyc+=`<li><span class="tdate">${dd(ecl.lunar.date)}</span> — éclipse <b>lunaire</b> (${ecl.lunar.kind}) en ${fmtLon(ecl.lunar.lon).deg}° ${sgn(ecl.lunar.lon)}</li>`;
   cyc+=`</ul>`;
+  if(ecl.solar) cyc+=`<p class="sm"><b>Éclipse solaire</b> en ${sgn(ecl.solar.lon)} : ${eclSense(ecl.solar.lon,true)}</p>`;
+  if(ecl.lunar) cyc+=`<p class="sm"><b>Éclipse lunaire</b> en ${sgn(ecl.lunar.lon)} : ${eclSense(ecl.lunar.lon,false)}</p>`;
   const mt=E.mundaneTimeline(now,90);
   cyc+=`<h4>Aspects mondains à venir <small>· « dates sensibles » (90 jours)</small></h4>`;
   if(!mt.length) cyc+=`<p class="vide">Aucun aspect mondain exact dans les 90 jours.</p>`;
@@ -794,6 +834,7 @@ function renderMondiale(){
   let bo=`<p class="chapeau">Brahy fut un pionnier de l'astrologie boursière : il corrélait les configurations célestes — surtout les aspects durs — aux retournements des marchés.</p>`;
   bo+=`<div class="notice"><b>Avertissement.</b> Outil d'étude inspiré des travaux de G.-L. Brahy. <b>Ce n'est en aucun cas un conseil financier</b> ni une prévision de marché.</div>`;
   bo+=`<h4>Baromètre du jour</h4><div class="baro"><div class="baro-scale"><span>tendu</span><span>équilibré</span><span>porteur</span></div><div class="baro-track"><i class="baro-mark" style="left:${pos}%"></i></div><div class="baro-val ${fb.index<-12?'asp-t':fb.index>12?'asp-h':''}">${fb.index>0?'+':''}${fb.index} — ${fb.label}</div></div>`;
+  bo+=`<p>${financialReading(fb)}</p>`;
   bo+=`<h4>Configurations actives <small>· aspects du jour entre les astres lents</small></h4>`;
   if(!fb.active.length) bo+=`<p class="vide">Aucun aspect serré entre les astres lents en ce moment.</p>`;
   else { bo+=`<ul class="liste">`; fb.active.slice(0,12).forEach(a=>{ const cl=a.fam==='harmon'?'asp-h':a.fam==='tendu'?'asp-t':'asp-n';

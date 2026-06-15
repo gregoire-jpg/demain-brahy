@@ -208,6 +208,10 @@ sup{ font-size:.66em; } small{ font-size:.82em; color:var(--muted); }
 .num{ font-family:var(--serif); font-size:11px; fill:var(--muted); cursor:pointer; } .sg{ font-family:var(--glyph); font-size:16px; fill:var(--accent); }
 .pl{ font-family:var(--glyph); font-size:19px; fill:var(--ink); cursor:pointer; } .pl.retro{ fill:var(--bleu); } .axe{ font-family:var(--serif); font-size:10px; fill:var(--gold); }
 
+/* ---------------- Encart « Lecture » (interprétation) ---------------- */
+.lecture{ background:var(--surface2); border-left:3px solid var(--accent); border-radius:var(--r); padding:10px 15px; margin:14px 0; max-width:74ch; }
+.lecture b:first-child{ color:var(--accent); }
+
 /* ---------------- Synastrie ---------------- */
 .syn-pick{ display:flex; flex-wrap:wrap; gap:14px 16px; align-items:flex-end; background:var(--surface); border:1px solid var(--line); border-radius:var(--r); box-shadow:var(--shadow); padding:14px 18px; margin:0 0 16px; }
 .syn-pick select{ font-family:var(--serif); font-size:1rem; background:#fff; border:1px solid var(--line); border-radius:var(--r); padding:7px 10px; min-width:200px; }
