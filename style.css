@@ -11,6 +11,7 @@
   --line:#e0ddd6; --line2:#ece9e3;
   --accent:#7c2b22; --accent2:#9a3a2c; --gold:#9a7a2e;
   --vert:#3a5530; --bleu:#2a4257;
+  --asp-h:#2f8f4e; --asp-t:#cf3a2a; --asp-n:#c79a2a;   /* aspects : harmonie / tension / conjonction (vifs, distincts) */
   --shadow:0 1px 2px rgba(35,28,18,.05), 0 2px 10px rgba(35,28,18,.05);
   --serif:'EB Garamond',Georgia,'Times New Roman',serif;
   --display:'Cormorant Garamond',Georgia,serif;
@@ -104,7 +105,7 @@ sup{ font-size:.66em; } small{ font-size:.82em; color:var(--muted); }
 .asp-legende{ display:flex; gap:12px; justify-content:center; flex-wrap:wrap; font-size:.7rem; margin-top:10px; }
 .asp-legende span{ display:inline-flex; align-items:center; }
 .asp-legende span::before{ content:""; display:inline-block; width:14px; border-top:2px solid currentColor; margin-right:5px; }
-.asp-legende .lh{ color:var(--vert); } .asp-legende .lt{ color:var(--accent); } .asp-legende .ln,.asp-legende .ls{ color:var(--gold); }
+.asp-legende{ font-weight:600; } .asp-legende .lh{ color:var(--asp-h); } .asp-legende .lt{ color:var(--asp-t); } .asp-legende .ln,.asp-legende .ls{ color:var(--asp-n); }
 .fig-leg{ font-size:.76rem; color:var(--muted); font-style:italic; margin:8px 0 0; text-align:center; }
 .exports{ display:flex; gap:8px; justify-content:center; margin-top:10px; }
 
@@ -115,12 +116,11 @@ sup{ font-size:.66em; } small{ font-size:.82em; color:var(--muted); }
 .fi b{ font-family:var(--display); font-size:1.18rem; font-weight:600; color:var(--ink); line-height:1.15; }
 
 /* ---------------- Sous-onglets ---------------- */
-.subnav{ display:flex; flex-wrap:wrap; gap:4px 18px; border-bottom:1px solid var(--line); margin:0 0 20px; }
-.subtab{ font-family:var(--display); font-size:1.08rem; font-weight:600; color:var(--muted); background:none; border:none;
-  padding:4px 2px 10px; cursor:pointer; position:relative; transition:color .15s; }
-.subtab:hover{ color:var(--ink); }
-.subtab[aria-selected="true"]{ color:var(--accent); }
-.subtab[aria-selected="true"]::after{ content:""; position:absolute; left:0; right:0; bottom:-1px; height:2px; background:var(--accent); }
+.subnav{ display:flex; flex-wrap:wrap; gap:6px; padding:7px; background:var(--surface2); border:1px solid var(--line); border-radius:10px; margin:0 0 22px; }
+.subtab{ font-family:var(--display); font-size:1rem; font-weight:600; color:var(--ink2); background:var(--surface); border:1px solid var(--line);
+  border-radius:999px; padding:6px 15px; cursor:pointer; transition:background .12s,color .12s,border-color .12s; }
+.subtab:hover{ border-color:var(--accent); color:var(--accent); }
+.subtab[aria-selected="true"]{ background:var(--accent); color:#fff; border-color:var(--accent); box-shadow:0 1px 3px rgba(124,43,34,.28); }
 .subtab:focus-visible{ outline:2px solid var(--gold); outline-offset:2px; }
 .subpanel{ scroll-margin-top:12px; }
 .subpanel>h3{ font-family:var(--display); font-weight:600; font-size:1.7rem; color:var(--ink); margin:0 0 14px; padding-bottom:0; border:0;
@@ -128,7 +128,7 @@ sup{ font-size:.66em; } small{ font-size:.82em; color:var(--muted); }
 .subpanel>h3::after{ content:""; flex:1; height:1px; background:var(--line); }
 .subpanel h4{ font-family:var(--display); font-weight:600; font-size:1.22rem; color:var(--accent); margin:22px 0 6px; }
 .subpanel p, .maison p, .astre p{ margin:.5em 0; max-width:74ch; }
-@media(max-width:600px){ .subnav{ flex-wrap:nowrap; overflow-x:auto; gap:14px; -webkit-overflow-scrolling:touch; } .subtab{ white-space:nowrap; font-size:1rem; } }
+@media(max-width:600px){ .subnav{ flex-wrap:nowrap; overflow-x:auto; gap:6px; -webkit-overflow-scrolling:touch; } .subtab{ white-space:nowrap; } }
 
 /* ---------------- Prose / chapeau ---------------- */
 .chapeau{ font-size:1.08rem; color:var(--ink2); }
@@ -153,8 +153,8 @@ sup{ font-size:.66em; } small{ font-size:.82em; color:var(--muted); }
 .aspgrid{ width:auto; } .aspgrid td{ width:34px; height:30px; text-align:center; border:1px solid var(--line2); padding:1px; }
 .aspgrid tr:hover td{ background:none; }
 .aspgrid .diag{ background:var(--surface3); font-size:1.15rem; } .aspc{ cursor:help; line-height:1; } .aspc small{ display:block; font-size:.58rem; }
-.aspc.asp-h{ background:rgba(58,85,48,.13); } .aspc.asp-t{ background:rgba(124,43,34,.11); } .aspc.asp-n{ background:rgba(154,122,46,.14); }
-.asp-h{ color:var(--vert); } .asp-t{ color:var(--accent); } .asp-n{ color:var(--gold); }
+.aspc.asp-h{ background:rgba(47,143,78,.16); } .aspc.asp-t{ background:rgba(207,58,42,.14); } .aspc.asp-n{ background:rgba(199,154,42,.18); }
+.asp-h{ color:var(--asp-h); font-weight:600; } .asp-t{ color:var(--asp-t); font-weight:600; } .asp-n{ color:var(--gold); font-weight:600; }
 
 /* listes */
 .liste{ list-style:none; padding:0; margin:8px 0; font-size:.92rem; }
@@ -197,10 +197,10 @@ sup{ font-size:.66em; } small{ font-size:.82em; color:var(--muted); }
 .w-star{ stroke:var(--gold); stroke-width:1.4; cursor:help; } .w-stem{ stroke:var(--muted); stroke-width:.5; }
 .w-pl{ font-family:var(--glyph); font-size:18px; fill:var(--ink); cursor:pointer; } .w-pl.retro{ fill:var(--bleu); }
 .w-pt{ font-family:var(--glyph); font-size:14px; fill:var(--gold); cursor:help; } .w-deg{ font-family:var(--serif); font-size:8.5px; fill:var(--ink2); }
-.w-asp{ stroke-width:1; } .w-hit{ stroke:transparent; stroke-width:11; pointer-events:stroke; cursor:help; }
-.w-asp-h{ stroke:var(--vert); opacity:.6; } .w-asp-t{ stroke:var(--accent); opacity:.5; } .w-asp-n{ stroke:var(--gold); opacity:.75; stroke-width:1.3; }
-.w-aspbg{ fill:var(--surface); } .w-aspg{ font-family:var(--glyph); font-size:9px; cursor:help; }
-.w-aspg.w-asp-h{ fill:var(--vert); stroke:none; opacity:1; } .w-aspg.w-asp-t{ fill:var(--accent); stroke:none; opacity:1; } .w-aspg.w-asp-n{ fill:var(--gold); stroke:none; opacity:1; }
+.w-asp{ stroke-width:1.5; } .w-hit{ stroke:transparent; stroke-width:11; pointer-events:stroke; cursor:help; }
+.w-asp-h{ stroke:var(--asp-h); opacity:.9; stroke-width:1.5; } .w-asp-t{ stroke:var(--asp-t); opacity:.88; stroke-width:1.5; } .w-asp-n{ stroke:var(--asp-n); opacity:.95; stroke-width:1.8; }
+.w-aspbg{ fill:var(--surface); } .w-aspg{ font-family:var(--glyph); font-size:10px; font-weight:bold; cursor:help; }
+.w-aspg.w-asp-h{ fill:var(--asp-h); stroke:none; opacity:1; } .w-aspg.w-asp-t{ fill:var(--asp-t); stroke:none; opacity:1; } .w-aspg.w-asp-n{ fill:var(--asp-n); stroke:none; opacity:1; }
 
 /* ---------------- Carré ---------------- */
 .bord{ fill:none; stroke:var(--ink); stroke-width:2.2; } .filet{ fill:none; stroke:var(--ink2); stroke-width:1; }
